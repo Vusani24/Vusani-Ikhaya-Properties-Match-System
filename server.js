@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -16,7 +15,13 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start server locally (Vercel handles this automatically in production)
-app.listen(PORT, () => {
-    console.log(`Vusani Ikhaya Server running on http://localhost:${PORT}`);
-});
+// For local development only
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Vusani Ikhaya Server running on http://localhost:${PORT}`);
+    });
+}
+
+// Export the Express API so Vercel can run it as a Serverless Function
+module.exports = app;

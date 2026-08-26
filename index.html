@@ -6,6 +6,7 @@
     <title>Vusani Ikhaya Properties - Property Match System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -16,59 +17,30 @@
             -webkit-text-size-adjust: 100%;
         }
         .container { max-width: 1500px; margin: 0 auto; }
-        
         .header {
             display: flex; flex-direction: column; align-items: stretch;
             gap: 10px; margin-bottom: 15px;
         }
-        @media (min-width: 600px) {
-            .header { flex-direction: row; justify-content: space-between; align-items: center; }
-        }
-        h1 { 
-            font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 8px; 
-            color: #1e3a8a; 
-        }
+        @media (min-width: 600px) { .header { flex-direction: row; justify-content: space-between; align-items: center; } }
+        h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #1e3a8a; }
         @media (min-width: 600px) { h1 { font-size: 2rem; } }
-        
-        .header-actions { 
-            display: flex; flex-wrap: wrap; gap: 6px; 
-        }
-        .header-actions .btn { 
-            font-size: 0.75rem; padding: 6px 12px; 
-        }
-        @media (min-width: 600px) { 
-            .header-actions .btn { font-size: 0.9rem; padding: 8px 18px; }
-        }
-        
+        .header-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .header-actions .btn { font-size: 0.75rem; padding: 6px 12px; }
+        @media (min-width: 600px) { .header-actions .btn { font-size: 0.9rem; padding: 8px 18px; } }
         .card {
             background: white; border-radius: 12px; padding: 14px 16px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px;
             border: 1px solid #e9edf2;
         }
-        @media (min-width: 600px) { 
-            .card { padding: 20px 24px; margin-bottom: 24px; border-radius: 16px; }
-        }
+        @media (min-width: 600px) { .card { padding: 20px 24px; margin-bottom: 24px; border-radius: 16px; } }
         .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         @media (min-width: 600px) { .card h2 { font-size: 1.2rem; margin-bottom: 16px; } }
-        
-        .form-row { 
-            display: flex; flex-direction: column; gap: 10px; 
-        }
-        @media (min-width: 500px) { 
-            .form-row { flex-direction: row; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
-        }
-        .form-group { 
-            display: flex; flex-direction: column; flex: 1 0 100%; 
-        }
-        @media (min-width: 500px) { 
-            .form-group { flex: 1 0 140px; }
-        }
-        .form-group label { 
-            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; 
-            font-weight: 600; color: #64748b; margin-bottom: 3px; 
-        }
+        .form-row { display: flex; flex-direction: column; gap: 10px; }
+        @media (min-width: 500px) { .form-row { flex-direction: row; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; } }
+        .form-group { display: flex; flex-direction: column; flex: 1 0 100%; }
+        @media (min-width: 500px) { .form-group { flex: 1 0 140px; } }
+        .form-group label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; color: #64748b; margin-bottom: 3px; }
         @media (min-width: 600px) { .form-group label { font-size: 0.75rem; } }
-        
         .form-group input, .form-group select, .form-group textarea {
             padding: 10px 12px; border: 1px solid #d1d9e6; border-radius: 10px;
             font-size: 0.95rem; background: #fafcff; transition: 0.2s; font-family: inherit;
@@ -78,16 +50,13 @@
             outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
         }
         .form-group small { font-size: 0.65rem; color: #64748b; margin-top: 3px; }
-        
         .btn {
             background: #3b82f6; color: white; border: none; padding: 12px 18px;
             border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
             transition: 0.2s; display: inline-flex; align-items: center; justify-content: center;
             gap: 6px; width: 100%; min-height: 44px; touch-action: manipulation;
         }
-        @media (min-width: 500px) { 
-            .btn { width: auto; padding: 10px 22px; min-height: auto; }
-        }
+        @media (min-width: 500px) { .btn { width: auto; padding: 10px 22px; min-height: auto; } }
         .btn:hover { background: #2563eb; transform: translateY(-1px); }
         .btn-success { background: #22c55e; } .btn-success:hover { background: #16a34a; }
         .btn-danger { background: #ef4444; } .btn-danger:hover { background: #dc2626; }
@@ -99,7 +68,6 @@
         .btn-whatsapp { background: #25D366; color: white; }
         .btn-whatsapp:hover { background: #128C7E; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        
         .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px; }
         @media (min-width: 600px) { table { font-size: 0.9rem; min-width: unset; } }
@@ -109,67 +77,37 @@
         tr:hover td { background: #f8fafc; }
         .clickable-row { cursor: pointer; }
         .clickable-row:hover td { background: #eef2ff !important; }
-        
         .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; }
         @media (min-width: 600px) { .badge { padding: 3px 12px; font-size: 0.7rem; } }
         .badge-green { background: #d1fae5; color: #0b5e42; }
         .badge-red { background: #fee2e2; color: #991b1b; }
-        
-        .stats { 
-            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; 
-        }
-        .stats span { 
-            background: #e9edf2; padding: 4px 10px; border-radius: 20px; 
-            font-size: 0.7rem; font-weight: 500; flex: 1 0 auto; text-align: center;
-        }
-        @media (min-width: 600px) { 
-            .stats span { font-size: 0.85rem; padding: 4px 16px; flex: 0 1 auto; }
-        }
+        .badge-blue { background: #dbeafe; color: #1e4f8a; }
+        .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .stats span { background: #e9edf2; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 500; flex: 1 0 auto; text-align: center; }
+        @media (min-width: 600px) { .stats span { font-size: 0.85rem; padding: 4px 16px; flex: 0 1 auto; } }
         .stats strong { font-weight: 700; }
-        
-        .grid-2 { 
-            display: grid; grid-template-columns: 1fr; gap: 16px; 
-        }
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
         @media (min-width: 700px) { .grid-2 { grid-template-columns: 1fr 1fr; gap: 20px; } }
-        
-        .match-grid { 
-            display: grid; grid-template-columns: 1fr; gap: 12px; 
-        }
+        .match-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media (min-width: 500px) { .match-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; } }
-        
-        .match-card {
-            background: #f8fafc; border-radius: 12px; padding: 14px;
-            border-left: 4px solid #3b82f6;
-        }
+        .match-card { background: #f8fafc; border-radius: 12px; padding: 14px; border-left: 4px solid #3b82f6; }
         .match-card .tenant-name { font-weight: 700; font-size: 1rem; color: #1e293b; }
         .match-card .room-detail { color: #475569; margin: 4px 0; font-size: 0.85rem; }
         .match-card .price { color: #059669; font-weight: 600; }
         .match-card .contact { background: white; padding: 4px 10px; border-radius: 30px; border: 1px solid #d1d9e6; display: inline-block; font-size: 0.75rem; margin-top: 4px; }
-        
         .media-thumb { width: 100%; height: 80px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 6px 0; cursor: pointer; position: relative; }
         @media (min-width: 600px) { .media-thumb { height: 100px; } }
         .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
         .media-thumb-overlay { position: absolute; bottom: 3px; right: 3px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.55rem; }
-        
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 10px;
-        }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 10px; }
         .modal-overlay.active { display: flex; }
-        .modal {
-            background: white; border-radius: 16px; max-width: 800px; width: 100%;
-            max-height: 95vh; overflow-y: auto; padding: 20px; position: relative; animation: slideIn 0.3s ease;
-        }
+        .modal { background: white; border-radius: 16px; max-width: 800px; width: 100%; max-height: 95vh; overflow-y: auto; padding: 20px; position: relative; animation: slideIn 0.3s ease; }
         @media (min-width: 600px) { .modal { padding: 30px; max-height: 90vh; border-radius: 20px; } }
         .modal-media { background: black; border-radius: 10px; overflow: hidden; margin-bottom: 12px; width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; }
         @media (min-width: 600px) { .modal-media { height: 400px; } }
         .modal-media img, .modal-media video { width: 100%; height: 100%; object-fit: contain; }
-        
         @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-close { 
-            position: sticky; top: 0; float: right; background: none; border: none; 
-            font-size: 1.5rem; cursor: pointer; color: #94a3b8; z-index: 10; padding: 4px 8px;
-        }
+        .modal-close { position: sticky; top: 0; float: right; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; z-index: 10; padding: 4px 8px; }
         @media (min-width: 600px) { .modal-close { font-size: 1.8rem; } }
         .modal-close:hover { color: #1e293b; }
         .modal h2 { margin-bottom: 12px; font-size: 1.2rem; }
@@ -177,44 +115,32 @@
         .modal .detail-row { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid #eef2f6; }
         @media (min-width: 600px) { .modal .detail-row { flex-direction: row; justify-content: space-between; padding: 8px 0; } }
         .modal .detail-row strong { color: #475569; }
-        
         .empty-state { text-align: center; color: #94a3b8; padding: 20px 10px; font-style: italic; font-size: 0.85rem; }
         .flex-between { display: flex; flex-direction: column; gap: 8px; }
         @media (min-width: 500px) { .flex-between { flex-direction: row; align-items: center; gap: 10px; } }
         .text-muted { color: #64748b; font-size: 0.8rem; }
         @media (min-width: 600px) { .text-muted { font-size: 0.9rem; } }
-        
         .contact-chip { background: #f1f5f9; padding: 3px 8px; border-radius: 16px; font-size: 0.7rem; display: inline-block; }
         @media (min-width: 600px) { .contact-chip { padding: 4px 10px; font-size: 0.85rem; } }
-        
-        .appointment-item { 
-            background: #f1f5f9; padding: 10px 14px; border-radius: 10px; margin: 6px 0; 
-            display: flex; flex-direction: column; gap: 8px;
-        }
-        @media (min-width: 600px) { 
-            .appointment-item { flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; }
-        }
+        .appointment-item { background: #f1f5f9; padding: 10px 14px; border-radius: 10px; margin: 6px 0; display: flex; flex-direction: column; gap: 8px; }
+        @media (min-width: 600px) { .appointment-item { flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; } }
         .appointment-item small { font-size: 0.7rem; }
         @media (min-width: 600px) { .appointment-item small { font-size: 0.85rem; } }
-        
         .media-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-bottom: 12px; }
         @media (min-width: 600px) { .media-gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; } }
         .media-gallery-item { background: #e2e8f0; border-radius: 8px; height: 100px; overflow: hidden; cursor: pointer; position: relative; }
         @media (min-width: 600px) { .media-gallery-item { height: 150px; } }
         .media-gallery-item img, .media-gallery-item video { width: 100%; height: 100%; object-fit: cover; }
-        
         .match-score { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.6rem; font-weight: 600; }
         @media (min-width: 600px) { .match-score { font-size: 0.7rem; padding: 2px 10px; } }
         .match-score.high { background: #d1fae5; color: #0b5e42; }
         .match-score.medium { background: #fef3c7; color: #92400e; }
         .match-score.low { background: #fee2e2; color: #991b1b; }
-        
         .thumbnail-nav { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; justify-content: center; }
         .thumbnail-nav-item { width: 40px; height: 40px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid #e2e8f0; }
         @media (min-width: 600px) { .thumbnail-nav-item { width: 50px; height: 50px; } }
         .thumbnail-nav-item.active { border-color: #3b82f6; }
         .thumbnail-nav-item img, .thumbnail-nav-item video { width: 100%; height: 100%; object-fit: cover; }
-        
         .toast {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             background: #22c55e; color: white; padding: 12px 20px; border-radius: 12px;
@@ -224,39 +150,28 @@
         }
         .toast.error { background: #ef4444; }
         @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-
-        .status-toggle-group {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-        }
-        .status-toggle-group .btn {
-            flex: 0 1 auto; min-width: 120px;
-        }
-        .status-toggle-group .btn.status-selected {
-            border: 3px solid #1e293b; transform: scale(1.05);
-        }
-        
-        .toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #22c55e; color: white; padding: 12px 20px; border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000;
-            animation: slideUp 0.3s ease; display: none; font-size: 0.9rem;
-            max-width: 90%; text-align: center;
-        }
-        .toast.error { background: #ef4444; }
-        @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+        .status-toggle-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .status-toggle-group .btn { flex: 0 1 auto; min-width: 120px; }
+        .status-toggle-group .btn.status-selected { border: 3px solid #1e293b; transform: scale(1.05); }
+        .cloud-status { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.7rem; }
+        .cloud-status.online { background: #d1fae5; color: #0b5e42; }
+        .cloud-status.offline { background: #fee2e2; color: #991b1b; }
+        .cloud-status.connecting { background: #fef3c7; color: #92400e; }
+        .edit-form { background: #f8fafc; padding: 15px; border-radius: 10px; margin-top: 10px; border: 2px solid #3b82f6; }
+        .edit-form .form-row { margin-bottom: 8px; }
+        .edit-form .btn { width: auto; }
     </style>
 </head>
 <body>
 
 <div class="container" id="app">
-    <!-- HEADER -->
     <div class="header">
         <div>
             <h1>🏠 Vusani Ikhaya</h1>
-            <div class="text-muted">Property Match System • 💾 Local Storage Only</div>
+            <div class="text-muted">Property Match System • <span id="cloudStatus" class="cloud-status connecting">☁️ Connecting...</span></div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-outline btn-sm" onclick="renderAll()">🔄 Refresh</button>
+            <button class="btn btn-outline btn-sm" onclick="forceRefresh()">🔄 Refresh</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('tenants')">📥 Tenants</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('landlords')">📥 Landlords</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('matches')">🔗 Matches</button>
@@ -267,19 +182,15 @@
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
     </div>
 
-    <!-- STATS -->
     <div class="stats">
         <span>🏢 Landlords: <strong id="statsLandlords">0</strong></span>
         <span>🧑‍💼 Tenants: <strong id="statsTenants">0</strong></span>
         <span>🔗 Matches: <strong id="statsMatches">0</strong></span>
         <span>📅 Appointments: <strong id="statsAppointments">0</strong></span>
         <span>🟢 Available: <strong id="statsAvailable">0</strong></span>
-        <span>💾 <strong id="dataSource">Local</strong></span>
     </div>
 
-    <!-- FORMS -->
     <div class="grid-2">
-        <!-- LANDLORD FORM -->
         <div class="card">
             <h2>🏢 Add Landlord / Room</h2>
             <div class="form-row">
@@ -331,7 +242,6 @@
             </div>
         </div>
 
-        <!-- TENANT FORM -->
         <div class="card">
             <h2>🧑‍💼 Add Tenant</h2>
             <div class="form-row">
@@ -358,11 +268,10 @@
         </div>
     </div>
 
-    <!-- LANDLORDS TABLE -->
     <div class="card">
         <div class="flex-between">
             <h2>🏢 Landlords &amp; Rooms</h2>
-            <span class="text-muted">Click row for details</span>
+            <span class="text-muted">✏️ Click Edit to modify • Toggle status</span>
         </div>
         <div class="table-wrap">
             <table>
@@ -372,21 +281,19 @@
         </div>
     </div>
 
-    <!-- TENANTS TABLE -->
     <div class="card">
         <div class="flex-between">
             <h2>🧑‍💼 Tenants</h2>
-            <span class="text-muted">Click for matched rooms</span>
+            <span class="text-muted">✏️ Click Edit to modify</span>
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Name</th><th>Budget</th><th>Location</th><th>Contact</th><th>Action</th></tr></thead>
+                <thead><tr><th>Name</th><th>Budget</th><th>Location</th><th>Contact</th><th>Actions</th></tr></thead>
                 <tbody id="tenantTableBody"><tr><td colspan="5" class="empty-state">No tenants added yet.</td></tr></tbody>
             </table>
         </div>
     </div>
 
-    <!-- MATCHES -->
     <div class="card">
         <div class="flex-between">
             <h2>🔗 Auto Matches</h2>
@@ -395,7 +302,6 @@
         <div id="matchesContainer"><div class="empty-state">Add tenants and rooms to see matches.</div></div>
     </div>
 
-    <!-- APPOINTMENTS -->
     <div class="card">
         <h2>📅 Appointments</h2>
         <div class="form-row" style="margin-bottom:12px;">
@@ -428,21 +334,30 @@
     </div>
 </div>
 
-<!-- TOAST NOTIFICATION -->
 <div class="toast" id="toast"></div>
 
 <script>
     // ============================================================
-    //  DATA STORE - LOCAL STORAGE ONLY (SIMPLIFIED)
+    //  SUPABASE KEYS
+    // ============================================================
+    const SUPABASE_URL = 'https://kyvbpxrybonwnigjevlv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmJweHJ5Ym9ud25pZ2pldmx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDA4MzksImV4cCI6MjEwMzMxNjgzOX0.F5vyJbAkvtXnVEmDJHJNF5m-hQBKdfb1aLK25wFSUMc';
+
+    // ============================================================
+    //  DATA STORE
     // ============================================================
     let landlords = [];
     let tenants = [];
     let appointments = [];
     let nextId = 1;
     let selectedStatus = true;
+    let supabase = null;
+    let cloudConnected = false;
+    let editingLandlordId = null;
+    let editingTenantId = null;
 
     // ============================================================
-    //  LOAD FROM LOCAL STORAGE
+    //  LOAD DATA (LOCAL ONLY - CLOUD IS BACKUP)
     // ============================================================
     function loadData() {
         try {
@@ -453,10 +368,7 @@
                 tenants = parsed.tenants || [];
                 appointments = parsed.appointments || [];
                 nextId = parsed.nextId || 1;
-                console.log('✅ Data loaded from localStorage:', {
-                    landlords: landlords.length,
-                    tenants: tenants.length
-                });
+                console.log('✅ Loaded from localStorage:', landlords.length, 'landlords,', tenants.length, 'tenants');
                 renderAll();
                 return true;
             }
@@ -467,21 +379,119 @@
     }
 
     // ============================================================
-    //  SAVE TO LOCAL STORAGE
+    //  SAVE DATA (LOCAL + CLOUD BACKUP)
     // ============================================================
     function saveData() {
         try {
             localStorage.setItem('vusaniIkhayaData', JSON.stringify({
                 landlords, tenants, appointments, nextId
             }));
-            console.log('💾 Data saved to localStorage');
-            document.getElementById('dataSource').textContent = '💾 Saved';
-            document.getElementById('dataSource').style.color = '#22c55e';
-            showToast('✅ Data saved!');
+            console.log('💾 Saved to localStorage');
+            // Also save to cloud as backup
+            setTimeout(() => saveToCloud(), 300);
         } catch (e) {
             console.error('❌ Save error:', e);
-            showToast('❌ Error saving data!', 'error');
         }
+    }
+
+    // ============================================================
+    //  SUPABASE CONNECTION
+    // ============================================================
+    function connectSupabase() {
+        try {
+            supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            cloudConnected = true;
+            document.getElementById('cloudStatus').textContent = '☁️ Online ✅';
+            document.getElementById('cloudStatus').className = 'cloud-status online';
+            console.log('✅ Supabase connected!');
+            // Load from cloud as backup
+            loadFromCloud();
+        } catch (e) {
+            cloudConnected = false;
+            document.getElementById('cloudStatus').textContent = '☁️ Offline ❌';
+            document.getElementById('cloudStatus').className = 'cloud-status offline';
+            console.log('⚠️ Supabase offline - using localStorage only');
+        }
+    }
+
+    // ============================================================
+    //  LOAD FROM CLOUD (BACKUP - WON'T OVERWRITE LOCAL)
+    // ============================================================
+    async function loadFromCloud() {
+        if (!supabase || !cloudConnected) return;
+        
+        try {
+            const { data, error } = await supabase
+                .from('app_data')
+                .select('data')
+                .eq('id', 'main_data')
+                .single();
+            
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    console.log('📝 No cloud data yet');
+                    await saveToCloud();
+                }
+                return;
+            }
+            
+            if (data && data.data) {
+                const cloudData = data.data;
+                // ONLY use cloud data if local is EMPTY
+                if (landlords.length === 0 && tenants.length === 0) {
+                    landlords = cloudData.landlords || [];
+                    tenants = cloudData.tenants || [];
+                    appointments = cloudData.appointments || [];
+                    nextId = cloudData.nextId || 1;
+                    saveData();
+                    renderAll();
+                    console.log('☁️ Loaded from cloud (local was empty)');
+                } else {
+                    console.log('📌 Local data exists, keeping it');
+                }
+            }
+        } catch (e) {
+            console.error('❌ Cloud load error:', e);
+        }
+    }
+
+    // ============================================================
+    //  SAVE TO CLOUD (BACKUP)
+    // ============================================================
+    async function saveToCloud() {
+        if (!supabase || !cloudConnected) return;
+        
+        try {
+            const data = {
+                landlords: landlords,
+                tenants: tenants,
+                appointments: appointments,
+                nextId: nextId,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            const { error } = await supabase
+                .from('app_data')
+                .upsert({
+                    id: 'main_data',
+                    data: data,
+                    updated_at: new Date().toISOString()
+                });
+            
+            if (error) throw error;
+            console.log('☁️ Saved to cloud backup');
+        } catch (e) {
+            console.error('❌ Cloud save error:', e);
+        }
+    }
+
+    // ============================================================
+    //  FORCE REFRESH
+    // ============================================================
+    function forceRefresh() {
+        loadData();
+        renderAll();
+        showToast('🔄 Refreshed from localStorage');
     }
 
     // ============================================================
@@ -529,8 +539,6 @@
     // ============================================================
     function addLandlord() {
         try {
-            console.log('➕ addLandlord() called');
-            
             const name = document.getElementById('llName').value.trim();
             const propType = document.getElementById('llPropType').value;
             const address = document.getElementById('llAddress').value.trim();
@@ -560,7 +568,7 @@
                 createdAt: new Date().toISOString()
             };
             
-            // Handle files if any
+            // Handle files
             if (fileInput.files && fileInput.files.length > 0) {
                 const files = fileInput.files;
                 let processed = 0;
@@ -585,24 +593,18 @@
             }
             
         } catch (e) {
-            console.error('❌ Error in addLandlord:', e);
+            console.error('❌ Error:', e);
             showToast('Error: ' + e.message, 'error');
         }
     }
 
     function finalizeAddLandlord(landlord) {
-        try {
-            console.log('💾 Saving landlord:', landlord.name);
-            landlords.push(landlord);
-            saveData();
-            renderAll();
-            clearLandlordForm();
-            showToast('✅ Landlord added! ' + landlord.mediaFiles.length + ' media files');
-            console.log('✅ Landlord added successfully!');
-        } catch (e) {
-            console.error('❌ Error saving landlord:', e);
-            showToast('Error saving: ' + e.message, 'error');
-        }
+        landlords.push(landlord);
+        saveData();
+        renderAll();
+        clearLandlordForm();
+        showToast('✅ Landlord added!');
+        console.log('✅ Landlord saved!');
     }
 
     function clearLandlordForm() {
@@ -612,6 +614,83 @@
         document.getElementById('llRent').value = '';
         document.getElementById('llMedia').value = '';
         setStatus('online');
+        editingLandlordId = null;
+    }
+
+    // ============================================================
+    //  EDIT LANDLORD
+    // ============================================================
+    function editLandlord(id) {
+        const l = landlords.find(x => x.id === id);
+        if (!l) return;
+        
+        editingLandlordId = id;
+        
+        // Fill the form with landlord data
+        document.getElementById('llName').value = l.name;
+        document.getElementById('llPropType').value = l.propType;
+        document.getElementById('llAddress').value = l.address;
+        document.getElementById('llRent').value = l.rent;
+        document.getElementById('llContact').value = l.contact;
+        
+        // Set status
+        if (l.available) {
+            setStatus('online');
+        } else {
+            setStatus('offline');
+        }
+        
+        // Change button text
+        const addBtn = document.querySelector('#app .grid-2 .card:first-child .btn');
+        addBtn.textContent = '📝 Update Room';
+        addBtn.style.background = '#f59e0b';
+        addBtn.onclick = function() { updateLandlord(id); };
+        
+        // Scroll to form
+        document.querySelector('#app .grid-2 .card:first-child').scrollIntoView({ behavior: 'smooth' });
+        
+        showToast('✏️ Editing: ' + l.name);
+    }
+
+    function updateLandlord(id) {
+        const l = landlords.find(x => x.id === id);
+        if (!l) return;
+        
+        const name = document.getElementById('llName').value.trim();
+        const propType = document.getElementById('llPropType').value;
+        const address = document.getElementById('llAddress').value.trim();
+        const rent = document.getElementById('llRent').value.trim();
+        const contact = document.getElementById('llContact').value.trim();
+        
+        if (!name || !contact || !address) {
+            showToast('Please fill: Name, Address, and Contact.', 'error');
+            return;
+        }
+
+        if (!rent || parseFloat(rent) <= 0) {
+            showToast('Please enter a valid rent amount (> 0).', 'error');
+            return;
+        }
+        
+        // Update landlord
+        l.name = name;
+        l.propType = propType;
+        l.address = address;
+        l.rent = parseFloat(rent);
+        l.contact = contact;
+        l.available = selectedStatus;
+        
+        saveData();
+        renderAll();
+        clearLandlordForm();
+        
+        // Reset button
+        const addBtn = document.querySelector('#app .grid-2 .card:first-child .btn');
+        addBtn.textContent = '+ Add Room';
+        addBtn.style.background = '#3b82f6';
+        addBtn.onclick = function() { addLandlord(); };
+        
+        showToast('✅ Landlord updated!');
     }
 
     // ============================================================
@@ -643,11 +722,80 @@
         
         saveData();
         renderAll();
+        clearTenantForm();
+        showToast('✅ Tenant added!');
+    }
+
+    function clearTenantForm() {
         document.getElementById('ttName').value = '';
         document.getElementById('ttBudget').value = '';
         document.getElementById('ttLocation').value = '';
         document.getElementById('ttContact').value = '';
-        showToast('✅ Tenant added!');
+        editingTenantId = null;
+        
+        // Reset button
+        const addBtn = document.querySelector('#app .grid-2 .card:last-child .btn');
+        addBtn.textContent = '+ Add Tenant';
+        addBtn.style.background = '#3b82f6';
+        addBtn.onclick = function() { addTenant(); };
+    }
+
+    // ============================================================
+    //  EDIT TENANT
+    // ============================================================
+    function editTenant(id) {
+        const t = tenants.find(x => x.id === id);
+        if (!t) return;
+        
+        editingTenantId = id;
+        
+        // Fill the form with tenant data
+        document.getElementById('ttName').value = t.name;
+        document.getElementById('ttBudget').value = t.budget;
+        document.getElementById('ttLocation').value = t.location;
+        document.getElementById('ttContact').value = t.contact;
+        
+        // Change button text
+        const addBtn = document.querySelector('#app .grid-2 .card:last-child .btn');
+        addBtn.textContent = '📝 Update Tenant';
+        addBtn.style.background = '#f59e0b';
+        addBtn.onclick = function() { updateTenant(id); };
+        
+        // Scroll to form
+        document.querySelector('#app .grid-2 .card:last-child').scrollIntoView({ behavior: 'smooth' });
+        
+        showToast('✏️ Editing: ' + t.name);
+    }
+
+    function updateTenant(id) {
+        const t = tenants.find(x => x.id === id);
+        if (!t) return;
+        
+        const name = document.getElementById('ttName').value.trim();
+        const budget = document.getElementById('ttBudget').value.trim();
+        const location = document.getElementById('ttLocation').value.trim();
+        const contact = document.getElementById('ttContact').value.trim();
+
+        if (!name || !contact || !location) {
+            showToast('Please fill: Name, Location, and Contact.', 'error');
+            return;
+        }
+
+        if (!budget || parseFloat(budget) <= 0) {
+            showToast('Please enter a valid budget amount (> 0).', 'error');
+            return;
+        }
+        
+        // Update tenant
+        t.name = name;
+        t.budget = parseFloat(budget);
+        t.location = location;
+        t.contact = contact;
+        
+        saveData();
+        renderAll();
+        clearTenantForm();
+        showToast('✅ Tenant updated!');
     }
 
     // ============================================================
@@ -769,12 +917,10 @@
             if (appt) {
                 appt.desc = desc; appt.dateTime = dateTime; appt.llName = llName;
                 appt.llNum = llNum; appt.address = address; appt.ttName = ttName; appt.ttNum = ttNum;
-                appt.tenantReminded = false; appt.landlordReminded = false;
             }
         } else {
             appointments.push({
-                id: nextId++, desc, dateTime, llName, llNum, address, ttName, ttNum,
-                tenantReminded: false, landlordReminded: false
+                id: nextId++, desc, dateTime, llName, llNum, address, ttName, ttNum
             });
         }
 
@@ -855,18 +1001,10 @@
     //  EXPORT / IMPORT
     // ============================================================
     function exportData() {
-        const data = {
-            landlords: landlords,
-            tenants: tenants,
-            appointments: appointments,
-            nextId: nextId,
-            exportedAt: new Date().toISOString()
-        };
-        
+        const data = { landlords, tenants, appointments, nextId, exportedAt: new Date().toISOString() };
         const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
         a.href = url;
         a.download = `vusani-ikhaya-backup-${new Date().toISOString().slice(0,10)}.json`;
@@ -874,37 +1012,30 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
         showToast('✅ Data exported!');
     }
 
     function importData(event) {
         const file = event.target.files[0];
         if (!file) return;
-        
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                
                 if (!data.landlords || !data.tenants || !data.appointments) {
                     showToast('❌ Invalid file format!', 'error');
                     return;
                 }
-                
                 if (!confirm(`Import ${data.landlords.length} landlords, ${data.tenants.length} tenants?`)) {
                     return;
                 }
-                
                 landlords = data.landlords || [];
                 tenants = data.tenants || [];
                 appointments = data.appointments || [];
                 nextId = data.nextId || 1;
-                
                 saveData();
                 renderAll();
                 showToast(`✅ Imported: ${landlords.length} landlords, ${tenants.length} tenants`);
-                
             } catch (error) {
                 showToast('❌ Error reading file: ' + error.message, 'error');
             }
@@ -921,7 +1052,6 @@
             showToast('PDF library loading. Try again.', 'error');
             return;
         }
-        
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('landscape');
         let head = [], body = [], title = "";
@@ -932,39 +1062,27 @@
             tenants.forEach(t => {
                 body.push([t.name, t.contact, parseFloat(t.budget).toFixed(2), t.location]);
             });
-        } 
-        else if (type === 'landlords') {
+        } else if (type === 'landlords') {
             title = "Vusani Ikhaya - Landlords List";
             head = [['Name', 'Contact', 'Address', 'Property Type', 'Rent (R)', 'Status']];
             landlords.forEach(l => {
                 body.push([l.name, l.contact, l.address, l.propType, parseFloat(l.rent).toFixed(2), l.available ? 'Online' : 'Offline']);
             });
-        } 
-        else if (type === 'matches') {
+        } else if (type === 'matches') {
             title = "Vusani Ikhaya - Matched Pairs";
             head = [['Tenant Name', 'Tenant Contact', 'Landlord Name', 'Landlord Contact', 'Address', 'Rent (R)']];
             const m = getMatches();
             m.forEach(match => {
                 body.push([
-                    match.tenant.name, 
-                    match.tenant.contact, 
-                    match.landlord.name, 
-                    match.landlord.contact, 
-                    match.landlord.address,
-                    parseFloat(match.landlord.rent).toFixed(2)
+                    match.tenant.name, match.tenant.contact,
+                    match.landlord.name, match.landlord.contact,
+                    match.landlord.address, parseFloat(match.landlord.rent).toFixed(2)
                 ]);
             });
         }
 
         doc.text(title, 14, 15);
-        doc.autoTable({
-            head: head,
-            body: body,
-            startY: 25,
-            theme: 'grid',
-            headStyles: { fillColor: [30, 58, 138] }
-        });
-
+        doc.autoTable({ head, body, startY: 25, theme: 'grid', headStyles: { fillColor: [30, 58, 138] } });
         doc.save(`${type}_list.pdf`);
     }
 
@@ -982,19 +1100,15 @@
     function renderLandlords() {
         const tbody = document.getElementById('landlordTableBody');
         if (landlords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet. Add one now!</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet.</td></tr>`;
             return;
         }
         let html = '';
         landlords.forEach(l => {
-            const statusBadge = l.available 
-                ? '<span class="badge badge-green">🟢 Online</span>'
-                : '<span class="badge badge-red">🔴 Offline</span>';
-            
+            const statusBadge = l.available ? '<span class="badge badge-green">🟢 Online</span>' : '<span class="badge badge-red">🔴 Offline</span>';
             const mediaCount = l.mediaFiles ? l.mediaFiles.length : 0;
-            
             html += `
-                <tr class="clickable-row" onclick="showLandlordDetail(${l.id})">
+                <tr>
                     <td>${statusBadge}</td>
                     <td><strong>${esc(l.name)}</strong></td>
                     <td>${esc(l.propType)}</td>
@@ -1002,10 +1116,11 @@
                     <td>R${parseFloat(l.rent).toFixed(0)}</td>
                     <td>${mediaCount} 📸</td>
                     <td>
-                        <button class="btn btn-sm ${l.available ? 'btn-warning' : 'btn-success'}" onclick="event.stopPropagation();toggleAvailability(${l.id})">
-                            ${l.available ? 'Set Offline' : 'Set Online'}
+                        <button class="btn btn-sm btn-warning" onclick="editLandlord(${l.id})">✏️ Edit</button>
+                        <button class="btn btn-sm ${l.available ? 'btn-outline' : 'btn-success'}" onclick="toggleAvailability(${l.id})">
+                            ${l.available ? '⬇️ Offline' : '⬆️ Online'}
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLandlord(${l.id})">✕</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLandlord(${l.id})">✕</button>
                     </td>
                 </tr>
             `;
@@ -1016,19 +1131,20 @@
     function renderTenants() {
         const tbody = document.getElementById('tenantTableBody');
         if (tenants.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet. Add one now!</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet.</td></tr>`;
             return;
         }
         let html = '';
         tenants.forEach(t => {
             html += `
-                <tr class="clickable-row" onclick="showTenantDetail(${t.id})">
+                <tr>
                     <td><strong>${esc(t.name)}</strong></td>
                     <td>R${parseFloat(t.budget).toFixed(0)}</td>
                     <td>${esc(t.location)}</td>
                     <td><span class="contact-chip">${esc(t.contact)}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteTenant(${t.id})">✕</button>
+                        <button class="btn btn-sm btn-warning" onclick="editTenant(${t.id})">✏️ Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTenant(${t.id})">✕</button>
                     </td>
                 </tr>
             `;
@@ -1039,16 +1155,13 @@
     function renderMatches() {
         const container = document.getElementById('matchesContainer');
         const matches = getMatches();
-
         if (matches.length === 0) {
-            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and online rooms with matching budgets &amp; locations.</div>`;
+            container.innerHTML = `<div class="empty-state">No matches found.</div>`;
             return;
         }
-
         let html = `<div class="match-grid">`;
         matches.forEach(m => {
             const t = m.tenant, l = m.landlord;
-            
             let scoreClass = 'low';
             if (m.matchScore >= 70) scoreClass = 'high';
             else if (m.matchScore >= 40) scoreClass = 'medium';
@@ -1057,12 +1170,12 @@
             if (l.mediaFiles && l.mediaFiles.length > 0) {
                 const firstMedia = l.mediaFiles[0];
                 if (firstMedia.type === 'video') {
-                    mediaHtml = `<div class="media-thumb" onclick="event.stopPropagation();openMediaModal(0, ${l.id})">
+                    mediaHtml = `<div class="media-thumb" onclick="openMediaModal(0, ${l.id})">
                         <video src="${firstMedia.data}" style="width:100%;height:100%;object-fit:cover;"></video>
                         <div class="media-thumb-overlay">▶️</div>
                     </div>`;
                 } else {
-                    mediaHtml = `<div class="media-thumb" onclick="event.stopPropagation();openMediaModal(0, ${l.id})">
+                    mediaHtml = `<div class="media-thumb" onclick="openMediaModal(0, ${l.id})">
                         <img src="${firstMedia.data}" alt="Room Photo" style="width:100%;height:100%;object-fit:cover;">
                         <div class="media-thumb-overlay">${l.mediaFiles.length} 📸</div>
                     </div>`;
@@ -1103,15 +1216,12 @@
             container.innerHTML = `<div class="empty-state">No appointments scheduled.</div>`;
             return;
         }
-
         let html = '';
         appointments.sort((a,b) => new Date(a.dateTime) - new Date(b.dateTime));
-
         appointments.forEach(a => {
             const date = new Date(a.dateTime);
             const formatted = date.toLocaleString();
             const waMessage = `Hello ${a.ttName}, you have an appointment for viewing on ${formatted} at ${a.address}.`;
-            
             html += `
                 <div class="appointment-item">
                     <div style="flex: 1 0 200px;">
@@ -1143,17 +1253,12 @@
             showToast('No media available.', 'error');
             return;
         }
-
         const idx = index || 0;
         const media = l.mediaFiles[idx];
+        let mediaHtml = media.type === 'video' 
+            ? `<video src="${media.data}" controls autoplay style="width:100%;height:100%;object-fit:contain;"></video>`
+            : `<img src="${media.data}" alt="Room Photo" style="width:100%;height:100%;object-fit:contain;">`;
         
-        let mediaHtml = '';
-        if (media.type === 'video') {
-            mediaHtml = `<video src="${media.data}" controls autoplay style="width:100%;height:100%;object-fit:contain;"></video>`;
-        } else {
-            mediaHtml = `<img src="${media.data}" alt="Room Photo" style="width:100%;height:100%;object-fit:contain;">`;
-        }
-
         let navHtml = '';
         if (l.mediaFiles.length > 1) {
             navHtml = `
@@ -1161,9 +1266,7 @@
                     <button class="btn btn-sm btn-outline" onclick="openMediaModal(${idx - 1}, ${landlordId})" ${idx === 0 ? 'disabled style="opacity:0.5;"' : ''}>
                         ⬅ Previous
                     </button>
-                    <span style="align-self:center;font-size:0.9rem;color:#64748b;">
-                        ${idx + 1} / ${l.mediaFiles.length}
-                    </span>
+                    <span style="align-self:center;font-size:0.9rem;color:#64748b;">${idx + 1} / ${l.mediaFiles.length}</span>
                     <button class="btn btn-sm btn-outline" onclick="openMediaModal(${idx + 1}, ${landlordId})" ${idx === l.mediaFiles.length - 1 ? 'disabled style="opacity:0.5;"' : ''}>
                         Next ➡
                     </button>
@@ -1178,21 +1281,17 @@
                 </div>
             `;
         }
-
-        const modalContent = `
+        document.getElementById('modalContent').innerHTML = `
             <h2>📹 Property Media</h2>
             <div class="modal-media">${mediaHtml}</div>
             ${navHtml}
         `;
-        
-        document.getElementById('modalContent').innerHTML = modalContent;
         document.getElementById('detailModal').classList.add('active');
     }
 
     function showLandlordDetail(id) {
         const l = landlords.find(x => x.id === id);
         if (!l) return;
-        
         let mediaHtml = '';
         if (l.mediaFiles && l.mediaFiles.length > 0) {
             mediaHtml = `<div class="media-gallery">`;
@@ -1213,8 +1312,7 @@
         } else {
             mediaHtml = '<p class="empty-state">No media uploaded.</p>';
         }
-        
-        const modalContent = `
+        document.getElementById('modalContent').innerHTML = `
             <h2>🏢 Room Details</h2>
             ${mediaHtml}
             <div class="detail-row"><strong>Landlord:</strong> <span>${esc(l.name)}</span></div>
@@ -1225,18 +1323,14 @@
             <div class="detail-row"><strong>Status:</strong> <span>${l.available ? '✅ Online' : '🔴 Offline'}</span></div>
             <div class="detail-row"><strong>Media Count:</strong> <span>${l.mediaFiles ? l.mediaFiles.length : 0} files</span></div>
         `;
-        
-        document.getElementById('modalContent').innerHTML = modalContent;
         document.getElementById('detailModal').classList.add('active');
     }
 
     function showTenantDetail(id) {
         const t = tenants.find(x => x.id === id);
         if (!t) return;
-        
         const matchesForTenant = getMatches().filter(m => m.tenant.id === id);
-        
-        const modalContent = `
+        document.getElementById('modalContent').innerHTML = `
             <h2>🧑‍💼 Tenant Details</h2>
             <div class="detail-row"><strong>Tenant:</strong> <span>${esc(t.name)}</span></div>
             <div class="detail-row"><strong>Budget:</strong> <span>R${parseFloat(t.budget).toFixed(2)}</span></div>
@@ -1247,15 +1341,12 @@
                 ${matchesForTenant.length > 0 ? matchesForTenant.map(m => `<div class="contact" style="display:block;margin-bottom:6px;">🏢 ${esc(m.landlord.name)} - ${esc(m.landlord.address)} (R${parseFloat(m.landlord.rent).toFixed(2)})</div>`).join('') : '<div class="empty-state">No matched rooms yet.</div>'}
             </div>
         `;
-        
-        document.getElementById('modalContent').innerHTML = modalContent;
         document.getElementById('detailModal').classList.add('active');
     }
 
     function closeModal() {
         document.getElementById('detailModal').classList.remove('active');
     }
-
     document.getElementById('detailModal').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
@@ -1272,27 +1363,29 @@
     }
 
     // ============================================================
+    //  AUTO-SYNC TO CLOUD (BACKUP)
+    // ============================================================
+    setInterval(() => {
+        if (cloudConnected) {
+            saveToCloud();
+        }
+    }, 30000);
+
+    // ============================================================
     //  INIT
     // ============================================================
-    console.log('🚀 Starting Vusani Ikhaya (Local Storage Only)...');
-    
-    // Load data
+    console.log('🚀 Starting Vusani Ikhaya...');
     loadData();
-    
-    // Set default status
     setStatus('online');
-    
-    // Show welcome message
+    setTimeout(() => connectSupabase(), 1000);
     setTimeout(() => {
         if (landlords.length === 0 && tenants.length === 0) {
             showToast('👋 Welcome! Add your first landlord or tenant.');
         } else {
             showToast(`📊 Loaded ${landlords.length} landlords and ${tenants.length} tenants`);
         }
-    }, 500);
-    
-    console.log('✅ App ready!');
-    console.log('📦 Data:', landlords.length, 'landlords,', tenants.length, 'tenants');
+    }, 1500);
+    console.log('✅ App ready! Data is stored in localStorage with cloud backup.');
 </script>
 </body>
 </html>

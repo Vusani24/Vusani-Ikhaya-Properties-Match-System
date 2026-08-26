@@ -2,20 +2,20 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the root directory
+app.use(express.static(__dirname));
 
-// Simple API endpoint to prove the backend is working
+// Simple API endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'success', message: 'Vusani Ikhaya Backend is running perfectly!' });
 });
 
 // Serve the main HTML file for all other routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// For local development only
+// For local development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
@@ -23,5 +23,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-// Export the Express API so Vercel can run it as a Serverless Function
 module.exports = app;

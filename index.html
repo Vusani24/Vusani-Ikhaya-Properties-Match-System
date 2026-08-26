@@ -2,120 +2,229 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <title>Vusani Ikhaya Properties - Property Match System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, 'Segoe UI', Roboto, Tahoma, Geneva, Verdana, sans-serif;
             background: #f0f4f9;
-            padding: 20px;
+            padding: 10px;
             color: #1e293b;
+            -webkit-text-size-adjust: 100%;
         }
         .container { max-width: 1500px; margin: 0 auto; }
+        
         .header {
-            display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 15px; margin-bottom: 20px;
+            display: flex; flex-direction: column; align-items: stretch;
+            gap: 10px; margin-bottom: 15px;
         }
-        h1 { font-size: 2rem; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #1e3a8a; }
-        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        @media (min-width: 600px) {
+            .header { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+        h1 { 
+            font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 8px; 
+            color: #1e3a8a; 
+        }
+        @media (min-width: 600px) { h1 { font-size: 2rem; } }
+        
+        .header-actions { 
+            display: flex; flex-wrap: wrap; gap: 6px; 
+        }
+        .header-actions .btn { 
+            font-size: 0.75rem; padding: 6px 12px; 
+        }
+        @media (min-width: 600px) { 
+            .header-actions .btn { font-size: 0.9rem; padding: 8px 18px; }
+        }
+        
         .card {
-            background: white; border-radius: 16px; padding: 20px 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 24px;
-            border: 1px solid #e9edf2; transition: 0.2s;
+            background: white; border-radius: 12px; padding: 14px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px;
+            border: 1px solid #e9edf2;
         }
-        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        .card h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-        .form-row { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
-        .form-group { display: flex; flex-direction: column; flex: 1 0 140px; }
-        .form-group label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+        @media (min-width: 600px) { 
+            .card { padding: 20px 24px; margin-bottom: 24px; border-radius: 16px; }
+        }
+        .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        @media (min-width: 600px) { .card h2 { font-size: 1.2rem; margin-bottom: 16px; } }
+        
+        .form-row { 
+            display: flex; flex-direction: column; gap: 10px; 
+        }
+        @media (min-width: 500px) { 
+            .form-row { flex-direction: row; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+        }
+        .form-group { 
+            display: flex; flex-direction: column; flex: 1 0 100%; 
+        }
+        @media (min-width: 500px) { 
+            .form-group { flex: 1 0 140px; }
+        }
+        .form-group label { 
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; 
+            font-weight: 600; color: #64748b; margin-bottom: 3px; 
+        }
+        @media (min-width: 600px) { .form-group label { font-size: 0.75rem; } }
+        
         .form-group input, .form-group select, .form-group textarea {
             padding: 10px 12px; border: 1px solid #d1d9e6; border-radius: 10px;
             font-size: 0.95rem; background: #fafcff; transition: 0.2s; font-family: inherit;
+            width: 100%; -webkit-appearance: none; appearance: none;
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
         }
-        .form-group small {
-            font-size: 0.7rem;
-            color: #64748b;
-            margin-top: 4px;
-        }
+        .form-group small { font-size: 0.65rem; color: #64748b; margin-top: 3px; }
+        
         .btn {
-            background: #3b82f6; color: white; border: none; padding: 10px 22px;
+            background: #3b82f6; color: white; border: none; padding: 12px 18px;
             border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
-            transition: 0.2s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+            transition: 0.2s; display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; width: 100%; min-height: 44px; touch-action: manipulation;
         }
-        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        @media (min-width: 500px) { 
+            .btn { width: auto; padding: 10px 22px; min-height: auto; }
+        }
+        .btn:hover { background: #2563eb; transform: translateY(-1px); }
         .btn-success { background: #22c55e; } .btn-success:hover { background: #16a34a; }
         .btn-danger { background: #ef4444; } .btn-danger:hover { background: #dc2626; }
         .btn-warning { background: #f59e0b; color: #1e293b; } .btn-warning:hover { background: #d97706; }
         .btn-outline { background: transparent; color: #3b82f6; border: 1.5px solid #3b82f6; }
-        .btn-outline:hover { background: #eff6ff; transform: translateY(-2px); }
-        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .btn-outline:hover { background: #eff6ff; }
+        .btn-sm { padding: 6px 10px; font-size: 0.7rem; min-height: 32px; width: auto; }
+        @media (min-width: 500px) { .btn-sm { padding: 5px 12px; font-size: 0.8rem; } }
         .btn-whatsapp { background: #25D366; color: white; }
         .btn-whatsapp:hover { background: #128C7E; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background: #f1f5f9; text-align: left; padding: 10px 12px; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 10px 12px; border-bottom: 1px solid #eef2f6; vertical-align: middle; }
+        
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px; }
+        @media (min-width: 600px) { table { font-size: 0.9rem; min-width: unset; } }
+        th { background: #f1f5f9; text-align: left; padding: 8px 8px; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; font-size: 0.65rem; }
+        td { padding: 8px 8px; border-bottom: 1px solid #eef2f6; vertical-align: middle; }
+        @media (min-width: 600px) { th { padding: 10px 12px; font-size: 0.9rem; } td { padding: 10px 12px; } }
         tr:hover td { background: #f8fafc; }
         .clickable-row { cursor: pointer; }
         .clickable-row:hover td { background: #eef2ff !important; }
-        .badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+        
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.6rem; font-weight: 600; }
+        @media (min-width: 600px) { .badge { padding: 3px 12px; font-size: 0.7rem; } }
         .badge-green { background: #d1fae5; color: #0b5e42; }
         .badge-red { background: #fee2e2; color: #991b1b; }
-        .badge-blue { background: #dbeafe; color: #1e4f8a; }
-        .match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-        .match-card {
-            background: #f8fafc; border-radius: 12px; padding: 16px;
-            border-left: 4px solid #3b82f6; transition: 0.2s;
+        
+        .stats { 
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; 
         }
-        .match-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .match-card .tenant-name { font-weight: 700; font-size: 1.1rem; color: #1e293b; }
-        .match-card .room-detail { color: #475569; margin: 6px 0; font-size: 0.9rem; }
+        .stats span { 
+            background: #e9edf2; padding: 4px 10px; border-radius: 20px; 
+            font-size: 0.7rem; font-weight: 500; flex: 1 0 auto; text-align: center;
+        }
+        @media (min-width: 600px) { 
+            .stats span { font-size: 0.85rem; padding: 4px 16px; flex: 0 1 auto; }
+        }
+        .stats strong { font-weight: 700; }
+        
+        .grid-2 { 
+            display: grid; grid-template-columns: 1fr; gap: 16px; 
+        }
+        @media (min-width: 700px) { .grid-2 { grid-template-columns: 1fr 1fr; gap: 20px; } }
+        
+        .match-grid { 
+            display: grid; grid-template-columns: 1fr; gap: 12px; 
+        }
+        @media (min-width: 500px) { .match-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; } }
+        
+        .match-card {
+            background: #f8fafc; border-radius: 12px; padding: 14px;
+            border-left: 4px solid #3b82f6;
+        }
+        .match-card .tenant-name { font-weight: 700; font-size: 1rem; color: #1e293b; }
+        .match-card .room-detail { color: #475569; margin: 4px 0; font-size: 0.85rem; }
         .match-card .price { color: #059669; font-weight: 600; }
-        .match-card .contact { background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #d1d9e6; display: inline-block; font-size: 0.85rem; margin-top: 6px; }
-        .media-thumb { width: 100%; height: 100px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 0; cursor: pointer; position: relative; }
+        .match-card .contact { background: white; padding: 4px 10px; border-radius: 30px; border: 1px solid #d1d9e6; display: inline-block; font-size: 0.75rem; margin-top: 4px; }
+        
+        .media-thumb { width: 100%; height: 80px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 6px 0; cursor: pointer; position: relative; }
+        @media (min-width: 600px) { .media-thumb { height: 100px; } }
         .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
-        .media-thumb-overlay { position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.65rem; }
+        .media-thumb-overlay { position: absolute; bottom: 3px; right: 3px; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.55rem; }
+        
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 10px;
         }
         .modal-overlay.active { display: flex; }
         .modal {
-            background: white; border-radius: 20px; max-width: 800px; width: 100%;
-            max-height: 90vh; overflow-y: auto; padding: 30px; position: relative; animation: slideIn 0.3s ease;
+            background: white; border-radius: 16px; max-width: 800px; width: 100%;
+            max-height: 95vh; overflow-y: auto; padding: 20px; position: relative; animation: slideIn 0.3s ease;
         }
-        .modal-media { background: black; border-radius: 12px; overflow: hidden; margin-bottom: 15px; width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; }
+        @media (min-width: 600px) { .modal { padding: 30px; max-height: 90vh; border-radius: 20px; } }
+        .modal-media { background: black; border-radius: 10px; overflow: hidden; margin-bottom: 12px; width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; }
+        @media (min-width: 600px) { .modal-media { height: 400px; } }
         .modal-media img, .modal-media video { width: 100%; height: 100%; object-fit: contain; }
-        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-close { position: sticky; top: 0; float: right; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8; z-index: 10; }
-        .modal-close:hover { color: #1e293b; transform: rotate(90deg); }
-        .modal h2 { margin-bottom: 16px; font-size: 1.5rem; }
-        .modal .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eef2f6; }
+        
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-close { 
+            position: sticky; top: 0; float: right; background: none; border: none; 
+            font-size: 1.5rem; cursor: pointer; color: #94a3b8; z-index: 10; padding: 4px 8px;
+        }
+        @media (min-width: 600px) { .modal-close { font-size: 1.8rem; } }
+        .modal-close:hover { color: #1e293b; }
+        .modal h2 { margin-bottom: 12px; font-size: 1.2rem; }
+        @media (min-width: 600px) { .modal h2 { font-size: 1.5rem; margin-bottom: 16px; } }
+        .modal .detail-row { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid #eef2f6; }
+        @media (min-width: 600px) { .modal .detail-row { flex-direction: row; justify-content: space-between; padding: 8px 0; } }
         .modal .detail-row strong { color: #475569; }
-        .empty-state { text-align: center; color: #94a3b8; padding: 30px 10px; font-style: italic; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .text-muted { color: #64748b; font-size: 0.9rem; }
-        .stats { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
-        .stats span { background: #e9edf2; padding: 4px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; }
-        .stats strong { font-weight: 700; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
-        .contact-chip { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; display: inline-block; }
-        .appointment-item { background: #f1f5f9; padding: 12px 16px; border-radius: 10px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .media-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 15px; }
-        .media-gallery-item { background: #e2e8f0; border-radius: 8px; height: 150px; overflow: hidden; cursor: pointer; position: relative; }
+        
+        .empty-state { text-align: center; color: #94a3b8; padding: 20px 10px; font-style: italic; font-size: 0.85rem; }
+        .flex-between { display: flex; flex-direction: column; gap: 8px; }
+        @media (min-width: 500px) { .flex-between { flex-direction: row; align-items: center; gap: 10px; } }
+        .text-muted { color: #64748b; font-size: 0.8rem; }
+        @media (min-width: 600px) { .text-muted { font-size: 0.9rem; } }
+        
+        .contact-chip { background: #f1f5f9; padding: 3px 8px; border-radius: 16px; font-size: 0.7rem; display: inline-block; }
+        @media (min-width: 600px) { .contact-chip { padding: 4px 10px; font-size: 0.85rem; } }
+        
+        .appointment-item { 
+            background: #f1f5f9; padding: 10px 14px; border-radius: 10px; margin: 6px 0; 
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        @media (min-width: 600px) { 
+            .appointment-item { flex-direction: row; justify-content: space-between; align-items: center; padding: 12px 16px; }
+        }
+        .appointment-item small { font-size: 0.7rem; }
+        @media (min-width: 600px) { .appointment-item small { font-size: 0.85rem; } }
+        
+        .media-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-bottom: 12px; }
+        @media (min-width: 600px) { .media-gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; } }
+        .media-gallery-item { background: #e2e8f0; border-radius: 8px; height: 100px; overflow: hidden; cursor: pointer; position: relative; }
+        @media (min-width: 600px) { .media-gallery-item { height: 150px; } }
         .media-gallery-item img, .media-gallery-item video { width: 100%; height: 100%; object-fit: cover; }
-        .match-score { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+        
+        .match-score { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.6rem; font-weight: 600; }
+        @media (min-width: 600px) { .match-score { font-size: 0.7rem; padding: 2px 10px; } }
         .match-score.high { background: #d1fae5; color: #0b5e42; }
         .match-score.medium { background: #fef3c7; color: #92400e; }
         .match-score.low { background: #fee2e2; color: #991b1b; }
+        
+        .thumbnail-nav { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; justify-content: center; }
+        .thumbnail-nav-item { width: 40px; height: 40px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid #e2e8f0; }
+        @media (min-width: 600px) { .thumbnail-nav-item { width: 50px; height: 50px; } }
+        .thumbnail-nav-item.active { border-color: #3b82f6; }
+        .thumbnail-nav-item img, .thumbnail-nav-item video { width: 100%; height: 100%; object-fit: cover; }
+        
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #22c55e; color: white; padding: 12px 20px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000;
+            animation: slideUp 0.3s ease; display: none; font-size: 0.9rem;
+            max-width: 90%; text-align: center;
+        }
+        .toast.error { background: #ef4444; }
+        @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -124,16 +233,19 @@
     <!-- HEADER -->
     <div class="header">
         <div>
-            <h1>🏠 Vusani Ikhaya Properties</h1>
-            <div class="text-muted">Property Match System • Auto-refreshes every 10s</div>
+            <h1>🏠 Vusani Ikhaya</h1>
+            <div class="text-muted">Property Match System</div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-outline" onclick="renderAll()">🔄 Refresh</button>
-            <button class="btn btn-success" onclick="exportPDF('tenants')">📥 Tenants PDF</button>
-            <button class="btn btn-success" onclick="exportPDF('landlords')">📥 Landlords PDF</button>
-            <button class="btn btn-success" onclick="exportPDF('matches')">🔗 Matches PDF</button>
-            <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑️ Clear All</button>
+            <button class="btn btn-outline btn-sm" onclick="renderAll()">🔄 Refresh</button>
+            <button class="btn btn-success btn-sm" onclick="exportPDF('tenants')">📥 Tenants</button>
+            <button class="btn btn-success btn-sm" onclick="exportPDF('landlords')">📥 Landlords</button>
+            <button class="btn btn-success btn-sm" onclick="exportPDF('matches')">🔗 Matches</button>
+            <button class="btn btn-warning btn-sm" onclick="exportData()">💾 Export</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('importFile').click()">📂 Import</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑️ Clear</button>
         </div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
     </div>
 
     <!-- STATS -->
@@ -143,6 +255,7 @@
         <span>🔗 Matches: <strong id="statsMatches">0</strong></span>
         <span>📅 Appointments: <strong id="statsAppointments">0</strong></span>
         <span>🟢 Available: <strong id="statsAvailable">0</strong></span>
+        <span>☁️ <strong id="cloudStatus">Offline</strong></span>
     </div>
 
     <!-- FORMS -->
@@ -185,7 +298,7 @@
                     <input type="file" id="llMedia" accept="image/*,video/*" multiple />
                     <small>Hold Ctrl/Cmd to select multiple files</small>
                 </div>
-                <div class="form-group" style="flex: 0 0 auto;">
+                <div class="form-group" style="flex: 0 0 auto; width: 100%;">
                     <button class="btn" onclick="addLandlord()">+ Add Room</button>
                 </div>
             </div>
@@ -211,7 +324,7 @@
                     <label>Contact *</label>
                     <input type="text" id="ttContact" placeholder="0827654321" />
                 </div>
-                <div class="form-group" style="flex: 0 0 auto;">
+                <div class="form-group" style="flex: 0 0 auto; width: 100%;">
                     <button class="btn" onclick="addTenant()">+ Add Tenant</button>
                 </div>
             </div>
@@ -222,11 +335,11 @@
     <div class="card">
         <div class="flex-between">
             <h2>🏢 Landlords &amp; Rooms</h2>
-            <span class="text-muted">Click a row to view details</span>
+            <span class="text-muted">Click row for details</span>
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Status</th><th>Landlord</th><th>Property</th><th>Address</th><th>Rent (R)</th><th>Contact</th><th>Media</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Status</th><th>Landlord</th><th>Property</th><th>Address</th><th>Rent</th><th>Media</th><th>Actions</th></tr></thead>
                 <tbody id="landlordTableBody"></tbody>
             </table>
         </div>
@@ -236,11 +349,11 @@
     <div class="card">
         <div class="flex-between">
             <h2>🧑‍💼 Tenants</h2>
-            <span class="text-muted">Click a tenant to see their matched rooms</span>
+            <span class="text-muted">Click for matched rooms</span>
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Name</th><th>Budget (R)</th><th>Preferred Location</th><th>Contact</th><th>Action</th></tr></thead>
+                <thead><tr><th>Name</th><th>Budget</th><th>Location</th><th>Contact</th><th>Action</th></tr></thead>
                 <tbody id="tenantTableBody"></tbody>
             </table>
         </div>
@@ -250,7 +363,7 @@
     <div class="card">
         <div class="flex-between">
             <h2>🔗 Auto Matches</h2>
-            <span class="text-muted">Tenants matched to available rooms</span>
+            <span class="text-muted">Tenants → Available Rooms</span>
         </div>
         <div id="matchesContainer"></div>
     </div>
@@ -258,21 +371,21 @@
     <!-- APPOINTMENTS -->
     <div class="card">
         <h2>📅 Appointments</h2>
-        <div class="form-row" style="margin-bottom:16px;">
+        <div class="form-row" style="margin-bottom:12px;">
             <input type="hidden" id="editApptId" />
-            <div class="form-group" style="flex: 1 0 100%;"><h3 style="font-size:1rem;">Landlord Details</h3></div>
+            <div class="form-group" style="flex: 1 0 100%;"><h3 style="font-size:0.9rem;">Landlord Details</h3></div>
             <div class="form-group"><label>Landlord Name</label><input type="text" id="apptLLName" placeholder="Landlord Name" /></div>
             <div class="form-group"><label>Landlord Number</label><input type="text" id="apptLLNum" placeholder="0821234567" /></div>
             <div class="form-group" style="flex: 2;"><label>Address</label><input type="text" id="apptAddress" placeholder="Viewing Address" /></div>
             
-            <div class="form-group" style="flex: 1 0 100%; margin-top:10px;"><h3 style="font-size:1rem;">Tenant Details</h3></div>
+            <div class="form-group" style="flex: 1 0 100%; margin-top:8px;"><h3 style="font-size:0.9rem;">Tenant Details</h3></div>
             <div class="form-group"><label>Tenant Name</label><input type="text" id="apptTTName" placeholder="Tenant Name" /></div>
             <div class="form-group"><label>Tenant Number</label><input type="text" id="apptTTNum" placeholder="0827654321" /></div>
             
-            <div class="form-group" style="flex: 1 0 100%; margin-top:10px;"><h3 style="font-size:1rem;">Schedule</h3></div>
+            <div class="form-group" style="flex: 1 0 100%; margin-top:8px;"><h3 style="font-size:0.9rem;">Schedule</h3></div>
             <div class="form-group" style="flex: 2;"><label>Description</label><input type="text" id="appointmentDesc" placeholder="e.g. Room Viewing" /></div>
             <div class="form-group"><label>Date &amp; Time</label><input type="datetime-local" id="appointmentDateTime" /></div>
-            <div class="form-group" style="flex: 0 0 auto;">
+            <div class="form-group" style="flex: 0 0 auto; width: 100%;">
                 <button class="btn btn-success" onclick="saveAppointment()" id="apptSaveBtn">+ Add Appointment</button>
             </div>
         </div>
@@ -288,14 +401,18 @@
     </div>
 </div>
 
+<!-- TOAST NOTIFICATION -->
+<div class="toast" id="toast"></div>
+
 <script>
     // ============================================================
-    //  DATA STORE
+    //  DATA STORE - PERSISTENT STORAGE
     // ============================================================
     let landlords = [];
     let tenants = [];
     let appointments = [];
     let nextId = 1;
+    let dataLoaded = false;
 
     function loadData() {
         try {
@@ -306,29 +423,290 @@
                 tenants = parsed.tenants || [];
                 appointments = parsed.appointments || [];
                 nextId = parsed.nextId || 1;
+                console.log("✅ Data loaded from localStorage:", {
+                    landlords: landlords.length,
+                    tenants: tenants.length
+                });
+                dataLoaded = true;
+            } else {
+                console.log("📝 No saved data found, starting fresh.");
+                dataLoaded = false;
             }
-        } catch (e) { console.error("Load error", e); }
+        } catch (e) { 
+            console.error("❌ Load error:", e); 
+            dataLoaded = false;
+        }
     }
 
     function saveData() {
         try {
-            localStorage.setItem('vusaniIkhayaData', JSON.stringify({ landlords, tenants, appointments, nextId }));
+            const data = { landlords, tenants, appointments, nextId };
+            localStorage.setItem('vusaniIkhayaData', JSON.stringify(data));
+            console.log("💾 Data saved to localStorage");
+            // Also save to cloud
+            setTimeout(() => saveToCloud(), 500);
         } catch (e) {
-            alert("Storage limit reached! Please clear old data or use smaller images.");
+            console.error("❌ Save error:", e);
+            showToast("Storage limit reached! Please clear old data.", "error");
         }
     }
 
+    // ============================================================
+    //  SUPABASE DATABASE - FIXED VERSION
+    // ============================================================
+
+    const SUPABASE_URL = 'https://kyvbpxrybonwnigjevlv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmJweHJ5Ym9ud25pZ2pldmx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDA4MzksImV4cCI6MjEwMzMxNjgzOX0.F5vyJbAkvtXnVEmDJHJNF5m-hQBKdfb1aLK25wFSUMc';
+
+    let supabase = null;
+    let isSyncing = false;
+    let cloudConnected = false;
+    let cloudDataLoaded = false;
+
+    function connectSupabase() {
+        try {
+            supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            cloudConnected = true;
+            document.getElementById('cloudStatus').textContent = 'Online ✅';
+            document.getElementById('cloudStatus').style.color = '#22c55e';
+            console.log('✅ Supabase connected successfully!');
+            // Only load from cloud if we have data or it's first time
+            loadFromCloud();
+        } catch (e) {
+            cloudConnected = false;
+            document.getElementById('cloudStatus').textContent = 'Offline ❌';
+            document.getElementById('cloudStatus').style.color = '#ef4444';
+            console.log('⚠️ Supabase offline, using local storage only');
+            console.error('❌ Connection error:', e);
+        }
+    }
+
+    // ============================================================
+    //  SAVE DATA TO SUPABASE
+    // ============================================================
+    async function saveToCloud() {
+        if (!supabase || isSyncing || !cloudConnected) return;
+        
+        try {
+            isSyncing = true;
+            
+            const data = {
+                landlords: landlords,
+                tenants: tenants,
+                appointments: appointments,
+                nextId: nextId,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            const { error } = await supabase
+                .from('app_data')
+                .upsert({ 
+                    id: 'main_data', 
+                    data: data,
+                    updated_at: new Date().toISOString()
+                });
+            
+            if (error) throw error;
+            console.log('☁️ Saved to cloud successfully');
+            document.getElementById('cloudStatus').textContent = 'Online ✅';
+            document.getElementById('cloudStatus').style.color = '#22c55e';
+            
+        } catch (e) {
+            console.error('❌ Save to cloud failed:', e);
+            document.getElementById('cloudStatus').textContent = 'Error ⚠️';
+            document.getElementById('cloudStatus').style.color = '#f59e0b';
+        } finally {
+            isSyncing = false;
+        }
+    }
+
+    // ============================================================
+    //  LOAD DATA FROM SUPABASE - FIXED!
+    // ============================================================
+    async function loadFromCloud() {
+        if (!supabase || !cloudConnected) return;
+        
+        // Prevent loading if we already have local data and this is first load
+        if (dataLoaded && !cloudDataLoaded) {
+            console.log('📌 Local data exists, checking cloud for newer data...');
+        }
+        
+        try {
+            const { data, error } = await supabase
+                .from('app_data')
+                .select('data')
+                .eq('id', 'main_data')
+                .single();
+            
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    console.log('📝 No cloud data yet. Creating first sync...');
+                    // Save local data to cloud if we have any
+                    if (landlords.length > 0 || tenants.length > 0) {
+                        await saveToCloud();
+                    }
+                }
+                return;
+            }
+            
+            if (data && data.data) {
+                const cloudData = data.data;
+                
+                // Get local data timestamp
+                const localData = localStorage.getItem('vusaniIkhayaData');
+                let localTime = '1970-01-01';
+                if (localData) {
+                    try {
+                        const localParsed = JSON.parse(localData);
+                        localTime = localParsed._lastUpdated || '1970-01-01';
+                    } catch (e) {}
+                }
+                
+                const cloudTime = cloudData.lastUpdated || '1970-01-01';
+                
+                // Check if we should use cloud data
+                const localHasData = landlords.length > 0 || tenants.length > 0;
+                const cloudHasData = cloudData.landlords && cloudData.landlords.length > 0;
+                
+                // If cloud has data AND (local is empty OR cloud is newer)
+                if (cloudHasData && (!localHasData || cloudTime > localTime)) {
+                    console.log('☁️ Loading data from cloud...');
+                    landlords = cloudData.landlords || [];
+                    tenants = cloudData.tenants || [];
+                    appointments = cloudData.appointments || [];
+                    nextId = cloudData.nextId || 1;
+                    
+                    // Save to localStorage with timestamp
+                    const saveDataWithTime = {
+                        landlords, tenants, appointments, nextId,
+                        _lastUpdated: cloudTime
+                    };
+                    localStorage.setItem('vusaniIkhayaData', JSON.stringify(saveDataWithTime));
+                    
+                    cloudDataLoaded = true;
+                    renderAll();
+                    showToast('☁️ Synced from cloud');
+                    console.log('☁️ Loaded from cloud successfully:', {
+                        landlords: landlords.length,
+                        tenants: tenants.length
+                    });
+                } else if (localHasData) {
+                    console.log('📌 Local data is newer or same, keeping it');
+                    // Update cloud with local data if it's newer
+                    if (cloudTime < localTime && localHasData) {
+                        await saveToCloud();
+                    }
+                }
+            }
+            
+        } catch (e) {
+            console.error('❌ Load from cloud failed:', e);
+        }
+    }
+
+    // ============================================================
+    //  AUTO-SYNC
+    // ============================================================
+    // Save to cloud every 10 seconds
+    setInterval(() => {
+        if (landlords.length > 0 || tenants.length > 0) {
+            saveToCloud();
+        }
+    }, 10000);
+
+    // Check for cloud updates every 30 seconds
+    setInterval(() => {
+        loadFromCloud();
+    }, 30000);
+
+    // ============================================================
+    //  EXPORT / IMPORT DATA
+    // ============================================================
+    function exportData() {
+        const data = {
+            landlords: landlords,
+            tenants: tenants,
+            appointments: appointments,
+            nextId: nextId,
+            exportedAt: new Date().toISOString()
+        };
+        
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vusani-ikhaya-backup-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('✅ Data exported successfully!');
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (!data.landlords || !data.tenants || !data.appointments) {
+                    showToast('❌ Invalid file format!', 'error');
+                    return;
+                }
+                
+                if (!confirm(`Import ${data.landlords.length} landlords, ${data.tenants.length} tenants, and ${data.appointments.length} appointments?`)) {
+                    return;
+                }
+                
+                landlords = data.landlords || [];
+                tenants = data.tenants || [];
+                appointments = data.appointments || [];
+                nextId = data.nextId || 1;
+                
+                saveData();
+                renderAll();
+                showToast(`✅ Imported: ${landlords.length} landlords, ${tenants.length} tenants`);
+                
+            } catch (error) {
+                showToast('❌ Error reading file: ' + error.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+        document.getElementById('importFile').value = '';
+    }
+
+    // ============================================================
+    //  TOAST NOTIFICATION
+    // ============================================================
+    function showToast(message, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast';
+        if (type === 'error') toast.classList.add('error');
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    // ============================================================
+    //  UTILITY FUNCTIONS
+    // ============================================================
     function esc(str) {
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     // ============================================================
-    //  ADD LANDLORD (with multiple images)
+    //  ADD LANDLORD
     // ============================================================
     function addLandlord() {
-        console.log("addLandlord() called");
-        
         const name = document.getElementById('llName').value.trim();
         const propType = document.getElementById('llPropType').value;
         const address = document.getElementById('llAddress').value.trim();
@@ -336,15 +714,13 @@
         const contact = document.getElementById('llContact').value.trim();
         const fileInput = document.getElementById('llMedia');
         
-        console.log("Name:", name, "Address:", address, "Contact:", contact, "Rent:", rent);
-        
         if (!name || !contact || !address) {
-            alert('Please fill all required fields: Name, Address, and Contact.');
+            showToast('Please fill: Name, Address, and Contact.', 'error');
             return;
         }
 
         if (!rent || parseFloat(rent) <= 0) {
-            alert('Please enter a valid rent amount (must be greater than 0).');
+            showToast('Please enter a valid rent amount (> 0).', 'error');
             return;
         }
 
@@ -384,7 +760,7 @@
                 };
                 
                 reader.onerror = function() {
-                    alert('Error reading file: ' + file.name);
+                    showToast('Error reading file: ' + file.name, 'error');
                     processedCount++;
                 };
                 
@@ -396,8 +772,6 @@
     }
 
     function saveLandlordWithMedia(name, propType, address, rent, contact, mediaFiles) {
-        console.log("Saving landlord with", mediaFiles.length, "media files");
-        
         landlords.push({
             id: nextId++, 
             name, 
@@ -412,7 +786,7 @@
         saveData(); 
         renderAll();
         clearLandlordForm();
-        alert('✅ Landlord added successfully with ' + mediaFiles.length + ' media file(s)!');
+        showToast('✅ Landlord added with ' + mediaFiles.length + ' media file(s)!');
     }
 
     function clearLandlordForm() {
@@ -427,22 +801,18 @@
     //  ADD TENANT
     // ============================================================
     function addTenant() {
-        console.log("addTenant() called");
-        
         const name = document.getElementById('ttName').value.trim();
         const budget = document.getElementById('ttBudget').value.trim();
         const location = document.getElementById('ttLocation').value.trim();
         const contact = document.getElementById('ttContact').value.trim();
 
-        console.log("Name:", name, "Budget:", budget, "Location:", location, "Contact:", contact);
-
         if (!name || !contact || !location) {
-            alert('Please fill all required fields: Name, Location, and Contact.');
+            showToast('Please fill: Name, Location, and Contact.', 'error');
             return;
         }
 
         if (!budget || parseFloat(budget) <= 0) {
-            alert('Please enter a valid budget amount (must be greater than 0).');
+            showToast('Please enter a valid budget amount (> 0).', 'error');
             return;
         }
 
@@ -461,46 +831,45 @@
         document.getElementById('ttLocation').value = '';
         document.getElementById('ttContact').value = '';
         
-        alert('✅ Tenant added successfully!');
+        showToast('✅ Tenant added successfully!');
     }
 
     // ============================================================
     //  TOGGLE & DELETE
     // ============================================================
     function toggleAvailability(id) {
-        console.log("toggleAvailability() called for ID:", id);
         const l = landlords.find(x => x.id === id);
         if (l) { 
             l.available = !l.available; 
             saveData(); 
             renderAll(); 
+            showToast(`✅ Room ${l.available ? 'available' : 'offline'}`);
         }
     }
 
     function deleteLandlord(id) {
-        console.log("deleteLandlord() called for ID:", id);
         if (!confirm('Remove this room?')) return;
         landlords = landlords.filter(l => l.id !== id);
         saveData(); renderAll();
+        showToast('🗑️ Room removed');
     }
 
     function deleteTenant(id) {
-        console.log("deleteTenant() called for ID:", id);
         if (!confirm('Remove this tenant?')) return;
         tenants = tenants.filter(t => t.id !== id);
         saveData(); renderAll();
+        showToast('🗑️ Tenant removed');
     }
 
     function clearAll() {
-        console.log("clearAll() called");
         if (!confirm('Delete ALL data? This cannot be undone!')) return;
         landlords = []; tenants = []; appointments = []; nextId = 1;
         saveData(); renderAll();
-        alert('✅ All data cleared!');
+        showToast('✅ All data cleared!');
     }
 
     // ============================================================
-    //  MATCHING ENGINE (with score)
+    //  MATCHING ENGINE
     // ============================================================
     function getMatches() {
         const matches = [];
@@ -511,7 +880,6 @@
             
             const matchedRooms = availableLandlords.filter(landlord => {
                 const rentAmount = parseFloat(landlord.rent) || 0;
-                // Match if budget >= rent AND location contains match
                 const locationMatch = tenant.location && landlord.address && 
                     (tenant.location.toLowerCase().includes(landlord.address.toLowerCase()) ||
                      landlord.address.toLowerCase().includes(tenant.location.toLowerCase()) ||
@@ -539,7 +907,6 @@
         const tenantBudget = parseFloat(tenant.budget) || 0;
         const rentAmount = parseFloat(landlord.rent) || 0;
         
-        // Budget match score
         const ratio = rentAmount / tenantBudget;
         if (ratio <= 0.6) score += 30;
         else if (ratio <= 0.8) score += 25;
@@ -547,7 +914,6 @@
         else if (ratio <= 1) score += 15;
         else score -= 10;
         
-        // Location match
         if (tenant.location && landlord.address) {
             const locWords = tenant.location.toLowerCase().split(/\s+/);
             const addrLower = landlord.address.toLowerCase();
@@ -575,7 +941,7 @@
         const ttNum = document.getElementById('apptTTNum').value.trim();
 
         if (!desc || !dateTime || !llName || !ttNum || !address) {
-            alert('Please fill all required appointment fields.');
+            showToast('Please fill all appointment fields.', 'error');
             return;
         }
 
@@ -596,7 +962,7 @@
         clearAppointmentForm();
         document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
         saveData(); renderAll();
-        alert('✅ Appointment saved!');
+        showToast('✅ Appointment saved!');
     }
 
     function clearAppointmentForm() {
@@ -629,11 +995,12 @@
         if (!confirm('Remove this appointment?')) return;
         appointments = appointments.filter(a => a.id != id);
         saveData(); renderAll();
+        showToast('🗑️ Appointment removed');
     }
 
     function sendWhatsApp(phoneNum, message) {
         if (!phoneNum) {
-            alert('No phone number available!');
+            showToast('No phone number available!', 'error');
             return;
         }
         let cleanNum = phoneNum.replace(/\D/g, '');
@@ -641,7 +1008,7 @@
             cleanNum = '27' + cleanNum.substring(1);
         }
         if (cleanNum.length < 10) {
-            alert('Invalid phone number. Please use format: 0821234567');
+            showToast('Invalid phone number. Use format: 0821234567', 'error');
             return;
         }
         const url = `https://wa.me/${cleanNum}?text=${encodeURIComponent(message)}`;
@@ -667,7 +1034,6 @@
     //  RENDER FUNCTIONS
     // ============================================================
     function renderAll() {
-        console.log("renderAll() called - Landlords:", landlords.length, "Tenants:", tenants.length);
         renderLandlords();
         renderTenants();
         renderMatches();
@@ -678,14 +1044,14 @@
     function renderLandlords() {
         const tbody = document.getElementById('landlordTableBody');
         if (landlords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No rooms added yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet.</td></tr>`;
             return;
         }
         let html = '';
         landlords.forEach(l => {
             const statusBadge = l.available 
-                ? '<span class="badge badge-green">🟢 Available</span>'
-                : '<span class="badge badge-red">🔴 Offline</span>';
+                ? '<span class="badge badge-green">🟢</span>'
+                : '<span class="badge badge-red">🔴</span>';
             
             const mediaCount = l.mediaFiles ? l.mediaFiles.length : 0;
             
@@ -695,12 +1061,11 @@
                     <td><strong>${esc(l.name)}</strong></td>
                     <td>${esc(l.propType)}</td>
                     <td>${esc(l.address)}</td>
-                    <td>R${parseFloat(l.rent).toFixed(2)}</td>
-                    <td><span class="contact-chip">${esc(l.contact)}</span></td>
+                    <td>R${parseFloat(l.rent).toFixed(0)}</td>
                     <td>${mediaCount} 📸</td>
                     <td>
                         <button class="btn btn-sm ${l.available ? 'btn-warning' : 'btn-success'}" onclick="event.stopPropagation();toggleAvailability(${l.id})">
-                            ${l.available ? 'Set Offline' : 'Set Online'}
+                            ${l.available ? 'Offline' : 'Online'}
                         </button>
                         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLandlord(${l.id})">✕</button>
                     </td>
@@ -721,7 +1086,7 @@
             html += `
                 <tr class="clickable-row" onclick="showTenantDetail(${t.id})">
                     <td><strong>${esc(t.name)}</strong></td>
-                    <td>R${parseFloat(t.budget).toFixed(2)}</td>
+                    <td>R${parseFloat(t.budget).toFixed(0)}</td>
                     <td>${esc(t.location)}</td>
                     <td><span class="contact-chip">${esc(t.contact)}</span></td>
                     <td>
@@ -738,7 +1103,7 @@
         const matches = getMatches();
 
         if (matches.length === 0) {
-            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and available rooms with matching budgets &amp; locations.</div>`;
+            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and rooms with matching budgets &amp; locations.</div>`;
             return;
         }
 
@@ -750,7 +1115,6 @@
             if (m.matchScore >= 70) scoreClass = 'high';
             else if (m.matchScore >= 40) scoreClass = 'medium';
             
-            // Build media thumbnails
             let mediaHtml = '';
             if (l.mediaFiles && l.mediaFiles.length > 0) {
                 const firstMedia = l.mediaFiles[0];
@@ -766,26 +1130,26 @@
                     </div>`;
                 }
             } else {
-                mediaHtml = `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#94a3b8;">📷 No media</div>`;
+                mediaHtml = `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:0.8rem;">📷 No media</div>`;
             }
 
-            const waMessage = `Hello ${t.name}, we have a ${l.propType} available at ${l.address}. The rent is R${l.rent}. Let me know if you are interested!`;
+            const waMessage = `Hello ${t.name}, we have a ${l.propType} available at ${l.address}. Rent is R${l.rent}. Interested?`;
             
             html += `
                 <div class="match-card">
                     <div class="tenant-name">${esc(t.name)} ↔️ ${esc(l.name)}</div>
                     <div class="room-detail">🏠 ${esc(l.propType)}</div>
                     <div class="room-detail">📍 ${esc(l.address)}</div>
-                    <div class="room-detail">💰 <span class="price">R${parseFloat(l.rent).toFixed(2)}</span></div>
-                    <div class="room-detail">💼 Tenant Budget: R${parseFloat(t.budget).toFixed(2)}</div>
-                    <div class="room-detail"><span class="match-score ${scoreClass}">Match Score: ${m.matchScore}%</span></div>
+                    <div class="room-detail">💰 <span class="price">R${parseFloat(l.rent).toFixed(0)}</span></div>
+                    <div class="room-detail">💼 Budget: R${parseFloat(t.budget).toFixed(0)}</div>
+                    <div class="room-detail"><span class="match-score ${scoreClass}">${m.matchScore}% Match</span></div>
                     ${mediaHtml}
                     <div>
-                        <span class="contact">📞 Tenant: ${esc(t.contact)}</span>
-                        <span class="contact" style="margin-left:6px;">📞 Landlord: ${esc(l.contact)}</span>
+                        <span class="contact">📞 ${esc(t.contact)}</span>
+                        <span class="contact" style="margin-left:4px;">📞 ${esc(l.contact)}</span>
                     </div>
-                    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsApp('${esc(t.contact)}', \`${waMessage}\`)">💬 WhatsApp Tenant</button>
+                    <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsApp('${esc(t.contact)}', \`${waMessage}\`)">💬 WA</button>
                         <button class="btn btn-sm btn-outline" onclick="autoFillAppointment(${t.id}, ${l.id})">📅 Set Appt</button>
                     </div>
                 </div>
@@ -838,7 +1202,7 @@
     function openMediaModal(index, landlordId) {
         const l = landlords.find(x => x.id === landlordId);
         if (!l || !l.mediaFiles || l.mediaFiles.length === 0) {
-            alert('No media available for this property.');
+            showToast('No media available for this property.', 'error');
             return;
         }
 
@@ -869,7 +1233,7 @@
                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;justify-content:center;">
                     ${l.mediaFiles.map((m, i) => `
                         <div onclick="openMediaModal(${i}, ${landlordId})" 
-                             style="width:50px;height:50px;border-radius:8px;overflow:hidden;cursor:pointer;border: ${i === idx ? '3px solid #3b82f6' : '2px solid #e2e8f0'};">
+                             style="width:40px;height:40px;border-radius:6px;overflow:hidden;cursor:pointer;border: ${i === idx ? '3px solid #3b82f6' : '2px solid #e2e8f0'};">
                             ${m.type === 'video' ? '▶️' : `<img src="${m.data}" style="width:100%;height:100%;object-fit:cover;">`}
                         </div>
                     `).join('')}
@@ -898,7 +1262,7 @@
                 if (media.type === 'video') {
                     mediaHtml += `<div class="media-gallery-item" onclick="openMediaModal(${i}, ${l.id})">
                         <video src="${media.data}" style="width:100%;height:100%;object-fit:cover;"></video>
-                        <div class="play-icon">▶️</div>
+                        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;color:white;text-shadow:0 0 10px rgba(0,0,0,0.5);">▶️</div>
                     </div>`;
                 } else {
                     mediaHtml += `<div class="media-gallery-item" onclick="openMediaModal(${i}, ${l.id})">
@@ -954,7 +1318,6 @@
         document.getElementById('detailModal').classList.remove('active');
     }
 
-    // Close modal on overlay click
     document.getElementById('detailModal').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
@@ -964,7 +1327,7 @@
     // ============================================================
     function exportPDF(type) {
         if (typeof window.jspdf === 'undefined') {
-            alert('PDF library is loading. Please try again in a moment.');
+            showToast('PDF library is loading. Please try again.', 'error');
             return;
         }
         
@@ -1057,9 +1420,17 @@
         });
     }, 60000);
 
-    // Load data and render
+    // ============================================================
+    //  INIT
+    // ============================================================
     loadData();
     renderAll();
+    
+    // Connect to Supabase after 1 second
+    setTimeout(() => {
+        connectSupabase();
+    }, 1000);
+    
     console.log("✅ Vusani Ikhaya Properties loaded successfully!");
     console.log("📊 Landlords:", landlords.length, "Tenants:", tenants.length);
 </script>

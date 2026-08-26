@@ -121,6 +121,7 @@
 <body>
 
 <div class="container" id="app">
+    <!-- HEADER -->
     <div class="header">
         <div>
             <h1>🏠 Vusani Ikhaya Properties</h1>
@@ -135,6 +136,7 @@
         </div>
     </div>
 
+    <!-- STATS -->
     <div class="stats">
         <span>🏢 Landlords: <strong id="statsLandlords">0</strong></span>
         <span>🧑‍💼 Tenants: <strong id="statsTenants">0</strong></span>
@@ -143,6 +145,7 @@
         <span>🟢 Available: <strong id="statsAvailable">0</strong></span>
     </div>
 
+    <!-- FORMS -->
     <div class="grid-2">
         <!-- LANDLORD FORM -->
         <div class="card">
@@ -166,21 +169,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Location *</label>
-                    <select id="llAddress">
-                        <option value="Alex 1st Ave - 12th Ave">Alex 1st Ave - 12th Ave</option>
-                        <option value="Alex 12th Ave - 23rd Ave">Alex 12th Ave - 23rd Ave</option>
-                        <option value="Tsutsumane">Tsutsumane</option>
-                        <option value="Ext 7">Ext 7</option>
-                        <option value="Ext 8">Ext 8</option>
-                        <option value="Ext 9">Ext 9</option>
-                        <option value="River Park">River Park</option>
-                        <option value="Marlboro">Marlboro</option>
-                        <option value="Kelvin">Kelvin</option>
-                        <option value="Lombardy">Lombardy</option>
-                        <option value="Bramley View">Bramley View</option>
-                        <option value="Sandton">Sandton</option>
-                    </select>
+                    <label>Address / Location *</label>
+                    <input type="text" id="llAddress" placeholder="e.g. 123 Main St, Sandton" />
                 </div>
                 <div class="form-group">
                     <label>Rent Amount (R) *</label>
@@ -215,20 +205,7 @@
                 </div>
                 <div class="form-group">
                     <label>Preferred Location *</label>
-                    <select id="ttLocation">
-                        <option value="Alex 1st Ave - 12th Ave">Alex 1st Ave - 12th Ave</option>
-                        <option value="Alex 12th Ave - 23rd Ave">Alex 12th Ave - 23rd Ave</option>
-                        <option value="Tsutsumane">Tsutsumane</option>
-                        <option value="Ext 7">Ext 7</option>
-                        <option value="Ext 8">Ext 8</option>
-                        <option value="Ext 9">Ext 9</option>
-                        <option value="River Park">River Park</option>
-                        <option value="Marlboro">Marlboro</option>
-                        <option value="Kelvin">Kelvin</option>
-                        <option value="Lombardy">Lombardy</option>
-                        <option value="Bramley View">Bramley View</option>
-                        <option value="Sandton">Sandton</option>
-                    </select>
+                    <input type="text" id="ttLocation" placeholder="e.g. Sandton, Alex" />
                 </div>
                 <div class="form-group">
                     <label>Contact *</label>
@@ -249,7 +226,7 @@
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Status</th><th>Landlord</th><th>Property</th><th>Location</th><th>Rent (R)</th><th>Contact</th><th>Media</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Status</th><th>Landlord</th><th>Property</th><th>Address</th><th>Rent (R)</th><th>Contact</th><th>Media</th><th>Actions</th></tr></thead>
                 <tbody id="landlordTableBody"></tbody>
             </table>
         </div>
@@ -354,15 +331,15 @@
         
         const name = document.getElementById('llName').value.trim();
         const propType = document.getElementById('llPropType').value;
-        const address = document.getElementById('llAddress').value;
+        const address = document.getElementById('llAddress').value.trim();
         const rent = document.getElementById('llRent').value.trim();
         const contact = document.getElementById('llContact').value.trim();
         const fileInput = document.getElementById('llMedia');
         
-        console.log("Name:", name, "Contact:", contact, "Rent:", rent);
+        console.log("Name:", name, "Address:", address, "Contact:", contact, "Rent:", rent);
         
-        if (!name || !contact) {
-            alert('Please fill all required fields (Name and Contact).');
+        if (!name || !contact || !address) {
+            alert('Please fill all required fields: Name, Address, and Contact.');
             return;
         }
 
@@ -440,6 +417,7 @@
 
     function clearLandlordForm() {
         document.getElementById('llName').value = '';
+        document.getElementById('llAddress').value = '';
         document.getElementById('llContact').value = '';
         document.getElementById('llRent').value = '';
         document.getElementById('llMedia').value = '';
@@ -453,13 +431,13 @@
         
         const name = document.getElementById('ttName').value.trim();
         const budget = document.getElementById('ttBudget').value.trim();
-        const location = document.getElementById('ttLocation').value;
+        const location = document.getElementById('ttLocation').value.trim();
         const contact = document.getElementById('ttContact').value.trim();
 
-        console.log("Name:", name, "Budget:", budget, "Contact:", contact);
+        console.log("Name:", name, "Budget:", budget, "Location:", location, "Contact:", contact);
 
-        if (!name || !contact) {
-            alert('Please fill all required fields (Name and Contact).');
+        if (!name || !contact || !location) {
+            alert('Please fill all required fields: Name, Location, and Contact.');
             return;
         }
 
@@ -480,6 +458,7 @@
 
         document.getElementById('ttName').value = '';
         document.getElementById('ttBudget').value = '';
+        document.getElementById('ttLocation').value = '';
         document.getElementById('ttContact').value = '';
         
         alert('✅ Tenant added successfully!');
@@ -532,7 +511,14 @@
             
             const matchedRooms = availableLandlords.filter(landlord => {
                 const rentAmount = parseFloat(landlord.rent) || 0;
-                return tenantBudget >= rentAmount && tenant.location === landlord.address;
+                // Match if budget >= rent AND location contains match
+                const locationMatch = tenant.location && landlord.address && 
+                    (tenant.location.toLowerCase().includes(landlord.address.toLowerCase()) ||
+                     landlord.address.toLowerCase().includes(tenant.location.toLowerCase()) ||
+                     tenant.location.toLowerCase().split(' ').some(word => 
+                         landlord.address.toLowerCase().includes(word) && word.length > 2
+                     ));
+                return tenantBudget >= rentAmount && locationMatch;
             });
             
             matchedRooms.forEach(room => {
@@ -573,6 +559,108 @@
         }
         
         return Math.min(100, Math.max(0, score));
+    }
+
+    // ============================================================
+    //  APPOINTMENTS
+    // ============================================================
+    function saveAppointment() {
+        const id = document.getElementById('editApptId').value;
+        const desc = document.getElementById('appointmentDesc').value.trim();
+        const dateTime = document.getElementById('appointmentDateTime').value;
+        const llName = document.getElementById('apptLLName').value.trim();
+        const llNum = document.getElementById('apptLLNum').value.trim();
+        const address = document.getElementById('apptAddress').value.trim();
+        const ttName = document.getElementById('apptTTName').value.trim();
+        const ttNum = document.getElementById('apptTTNum').value.trim();
+
+        if (!desc || !dateTime || !llName || !ttNum || !address) {
+            alert('Please fill all required appointment fields.');
+            return;
+        }
+
+        if (id) {
+            const appt = appointments.find(a => a.id == id);
+            if (appt) {
+                appt.desc = desc; appt.dateTime = dateTime; appt.llName = llName;
+                appt.llNum = llNum; appt.address = address; appt.ttName = ttName; appt.ttNum = ttNum;
+                appt.tenantReminded = false; appt.landlordReminded = false;
+            }
+        } else {
+            appointments.push({
+                id: nextId++, desc, dateTime, llName, llNum, address, ttName, ttNum,
+                tenantReminded: false, landlordReminded: false
+            });
+        }
+
+        clearAppointmentForm();
+        document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
+        saveData(); renderAll();
+        alert('✅ Appointment saved!');
+    }
+
+    function clearAppointmentForm() {
+        document.getElementById('editApptId').value = '';
+        document.getElementById('appointmentDesc').value = '';
+        document.getElementById('appointmentDateTime').value = '';
+        document.getElementById('apptLLName').value = '';
+        document.getElementById('apptLLNum').value = '';
+        document.getElementById('apptAddress').value = '';
+        document.getElementById('apptTTName').value = '';
+        document.getElementById('apptTTNum').value = '';
+    }
+
+    function editAppointment(id) {
+        const a = appointments.find(x => x.id == id);
+        if (!a) return;
+        document.getElementById('editApptId').value = a.id;
+        document.getElementById('appointmentDesc').value = a.desc;
+        document.getElementById('appointmentDateTime').value = a.dateTime;
+        document.getElementById('apptLLName').value = a.llName;
+        document.getElementById('apptLLNum').value = a.llNum;
+        document.getElementById('apptAddress').value = a.address;
+        document.getElementById('apptTTName').value = a.ttName;
+        document.getElementById('apptTTNum').value = a.ttNum;
+        document.getElementById('apptSaveBtn').innerText = 'Update Appointment';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function deleteAppointment(id) {
+        if (!confirm('Remove this appointment?')) return;
+        appointments = appointments.filter(a => a.id != id);
+        saveData(); renderAll();
+    }
+
+    function sendWhatsApp(phoneNum, message) {
+        if (!phoneNum) {
+            alert('No phone number available!');
+            return;
+        }
+        let cleanNum = phoneNum.replace(/\D/g, '');
+        if (cleanNum.startsWith('0')) {
+            cleanNum = '27' + cleanNum.substring(1);
+        }
+        if (cleanNum.length < 10) {
+            alert('Invalid phone number. Please use format: 0821234567');
+            return;
+        }
+        const url = `https://wa.me/${cleanNum}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    }
+
+    function autoFillAppointment(tenantId, landlordId) {
+        const t = tenants.find(x => x.id === tenantId);
+        const l = landlords.find(x => x.id === landlordId);
+        if (!t || !l) return;
+        clearAppointmentForm();
+        document.getElementById('appointmentDesc').value = `Viewing at ${l.address}`;
+        document.getElementById('apptLLName').value = l.name;
+        document.getElementById('apptLLNum').value = l.contact;
+        document.getElementById('apptAddress').value = l.address;
+        document.getElementById('apptTTName').value = t.name;
+        document.getElementById('apptTTNum').value = t.contact;
+        document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     // ============================================================
@@ -658,7 +746,322 @@
         matches.forEach(m => {
             const t = m.tenant, l = m.landlord;
             
-            // Get score class
             let scoreClass = 'low';
             if (m.matchScore >= 70) scoreClass = 'high';
-            else if (m.matchScore >= 
+            else if (m.matchScore >= 40) scoreClass = 'medium';
+            
+            // Build media thumbnails
+            let mediaHtml = '';
+            if (l.mediaFiles && l.mediaFiles.length > 0) {
+                const firstMedia = l.mediaFiles[0];
+                if (firstMedia.type === 'video') {
+                    mediaHtml = `<div class="media-thumb" onclick="event.stopPropagation();openMediaModal(0, ${l.id})">
+                        <video src="${firstMedia.data}" style="width:100%;height:100%;object-fit:cover;"></video>
+                        <div class="media-thumb-overlay">▶️</div>
+                    </div>`;
+                } else {
+                    mediaHtml = `<div class="media-thumb" onclick="event.stopPropagation();openMediaModal(0, ${l.id})">
+                        <img src="${firstMedia.data}" alt="Room Photo" style="width:100%;height:100%;object-fit:cover;">
+                        <div class="media-thumb-overlay">${l.mediaFiles.length} 📸</div>
+                    </div>`;
+                }
+            } else {
+                mediaHtml = `<div class="media-thumb" style="display:flex;align-items:center;justify-content:center;color:#94a3b8;">📷 No media</div>`;
+            }
+
+            const waMessage = `Hello ${t.name}, we have a ${l.propType} available at ${l.address}. The rent is R${l.rent}. Let me know if you are interested!`;
+            
+            html += `
+                <div class="match-card">
+                    <div class="tenant-name">${esc(t.name)} ↔️ ${esc(l.name)}</div>
+                    <div class="room-detail">🏠 ${esc(l.propType)}</div>
+                    <div class="room-detail">📍 ${esc(l.address)}</div>
+                    <div class="room-detail">💰 <span class="price">R${parseFloat(l.rent).toFixed(2)}</span></div>
+                    <div class="room-detail">💼 Tenant Budget: R${parseFloat(t.budget).toFixed(2)}</div>
+                    <div class="room-detail"><span class="match-score ${scoreClass}">Match Score: ${m.matchScore}%</span></div>
+                    ${mediaHtml}
+                    <div>
+                        <span class="contact">📞 Tenant: ${esc(t.contact)}</span>
+                        <span class="contact" style="margin-left:6px;">📞 Landlord: ${esc(l.contact)}</span>
+                    </div>
+                    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsApp('${esc(t.contact)}', \`${waMessage}\`)">💬 WhatsApp Tenant</button>
+                        <button class="btn btn-sm btn-outline" onclick="autoFillAppointment(${t.id}, ${l.id})">📅 Set Appt</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderAppointments() {
+        const container = document.getElementById('appointmentsContainer');
+        if (appointments.length === 0) {
+            container.innerHTML = `<div class="empty-state">No appointments scheduled.</div>`;
+            return;
+        }
+
+        let html = '';
+        appointments.sort((a,b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+        appointments.forEach(a => {
+            const date = new Date(a.dateTime);
+            const formatted = date.toLocaleString();
+            const waMessage = `Hello ${a.ttName}, you have an appointment for viewing on ${formatted} at ${a.address}. My number is 0685353186, WhatsApp this number when you're at the location.`;
+            
+            html += `
+                <div class="appointment-item">
+                    <div style="flex: 1 0 200px;">
+                        <strong>📅 ${formatted}</strong><br>
+                        ${esc(a.desc)}<br>
+                        <small>
+                            🏢 Landlord: ${esc(a.llName)} (${esc(a.llNum)})<br>
+                            📍 Address: ${esc(a.address)}<br>
+                            🧑‍💼 Tenant: ${esc(a.ttName)} (${esc(a.ttNum)})
+                        </small>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsApp('${esc(a.ttNum)}', \`${waMessage}\`)">💬 Send WA</button>
+                        <button class="btn btn-sm btn-warning" onclick="editAppointment(${a.id})">✎ Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAppointment(${a.id})">✕ Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // ============================================================
+    //  MODAL FUNCTIONS
+    // ============================================================
+    function openMediaModal(index, landlordId) {
+        const l = landlords.find(x => x.id === landlordId);
+        if (!l || !l.mediaFiles || l.mediaFiles.length === 0) {
+            alert('No media available for this property.');
+            return;
+        }
+
+        const idx = index || 0;
+        const media = l.mediaFiles[idx];
+        
+        let mediaHtml = '';
+        if (media.type === 'video') {
+            mediaHtml = `<video src="${media.data}" controls autoplay style="width:100%;height:100%;object-fit:contain;"></video>`;
+        } else {
+            mediaHtml = `<img src="${media.data}" alt="Room Photo" style="width:100%;height:100%;object-fit:contain;">`;
+        }
+
+        let navHtml = '';
+        if (l.mediaFiles.length > 1) {
+            navHtml = `
+                <div style="display:flex;justify-content:space-between;margin-top:10px;gap:10px;">
+                    <button class="btn btn-sm btn-outline" onclick="openMediaModal(${idx - 1}, ${landlordId})" ${idx === 0 ? 'disabled style="opacity:0.5;"' : ''}>
+                        ⬅ Previous
+                    </button>
+                    <span style="align-self:center;font-size:0.9rem;color:#64748b;">
+                        ${idx + 1} / ${l.mediaFiles.length}
+                    </span>
+                    <button class="btn btn-sm btn-outline" onclick="openMediaModal(${idx + 1}, ${landlordId})" ${idx === l.mediaFiles.length - 1 ? 'disabled style="opacity:0.5;"' : ''}>
+                        Next ➡
+                    </button>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;justify-content:center;">
+                    ${l.mediaFiles.map((m, i) => `
+                        <div onclick="openMediaModal(${i}, ${landlordId})" 
+                             style="width:50px;height:50px;border-radius:8px;overflow:hidden;cursor:pointer;border: ${i === idx ? '3px solid #3b82f6' : '2px solid #e2e8f0'};">
+                            ${m.type === 'video' ? '▶️' : `<img src="${m.data}" style="width:100%;height:100%;object-fit:cover;">`}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        const modalContent = `
+            <h2>📹 Property Media</h2>
+            <div class="modal-media">${mediaHtml}</div>
+            ${navHtml}
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function showLandlordDetail(id) {
+        const l = landlords.find(x => x.id === id);
+        if (!l) return;
+        
+        let mediaHtml = '';
+        if (l.mediaFiles && l.mediaFiles.length > 0) {
+            mediaHtml = `<div class="media-gallery">`;
+            l.mediaFiles.forEach((media, i) => {
+                if (media.type === 'video') {
+                    mediaHtml += `<div class="media-gallery-item" onclick="openMediaModal(${i}, ${l.id})">
+                        <video src="${media.data}" style="width:100%;height:100%;object-fit:cover;"></video>
+                        <div class="play-icon">▶️</div>
+                    </div>`;
+                } else {
+                    mediaHtml += `<div class="media-gallery-item" onclick="openMediaModal(${i}, ${l.id})">
+                        <img src="${media.data}" style="width:100%;height:100%;object-fit:cover;">
+                    </div>`;
+                }
+            });
+            mediaHtml += `</div>`;
+            mediaHtml += `<button class="btn btn-sm btn-outline" onclick="openMediaModal(0, ${l.id})" style="margin-bottom:15px;">📸 View All (${l.mediaFiles.length})</button>`;
+        } else {
+            mediaHtml = '<p class="empty-state">No media uploaded.</p>';
+        }
+        
+        const modalContent = `
+            <h2>🏢 Room Details</h2>
+            ${mediaHtml}
+            <div class="detail-row"><strong>Landlord:</strong> <span>${esc(l.name)}</span></div>
+            <div class="detail-row"><strong>Property Type:</strong> <span>${esc(l.propType)}</span></div>
+            <div class="detail-row"><strong>Address:</strong> <span>${esc(l.address)}</span></div>
+            <div class="detail-row"><strong>Rent:</strong> <span>R${parseFloat(l.rent).toFixed(2)}</span></div>
+            <div class="detail-row"><strong>Contact:</strong> <span>${esc(l.contact)}</span></div>
+            <div class="detail-row"><strong>Status:</strong> <span>${l.available ? '✅ Available' : '🔴 Offline'}</span></div>
+            <div class="detail-row"><strong>Media Count:</strong> <span>${l.mediaFiles ? l.mediaFiles.length : 0} files</span></div>
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function showTenantDetail(id) {
+        const t = tenants.find(x => x.id === id);
+        if (!t) return;
+        
+        const matchesForTenant = getMatches().filter(m => m.tenant.id === id);
+        
+        const modalContent = `
+            <h2>🧑‍💼 Tenant Details</h2>
+            <div class="detail-row"><strong>Tenant:</strong> <span>${esc(t.name)}</span></div>
+            <div class="detail-row"><strong>Budget:</strong> <span>R${parseFloat(t.budget).toFixed(2)}</span></div>
+            <div class="detail-row"><strong>Preferred Location:</strong> <span>${esc(t.location)}</span></div>
+            <div class="detail-row"><strong>Contact:</strong> <span>${esc(t.contact)}</span></div>
+            <div class="mt-2">
+                <h3 style="font-size:1.1rem;margin:15px 0 8px;">Matched Rooms (${matchesForTenant.length})</h3>
+                ${matchesForTenant.length > 0 ? matchesForTenant.map(m => `<div class="contact" style="display:block;margin-bottom:6px;">🏢 ${esc(m.landlord.name)} - ${esc(m.landlord.address)} (R${parseFloat(m.landlord.rent).toFixed(2)})</div>`).join('') : '<div class="empty-state">No matched rooms yet.</div>'}
+            </div>
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('detailModal').classList.remove('active');
+    }
+
+    // Close modal on overlay click
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ============================================================
+    //  PDF EXPORT
+    // ============================================================
+    function exportPDF(type) {
+        if (typeof window.jspdf === 'undefined') {
+            alert('PDF library is loading. Please try again in a moment.');
+            return;
+        }
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+        let head = [], body = [], title = "";
+
+        if (type === 'tenants') {
+            title = "Vusani Ikhaya Properties - Tenants List";
+            head = [['Name', 'Contact', 'Budget (R)', 'Preferred Location']];
+            tenants.forEach(t => {
+                body.push([t.name, t.contact, parseFloat(t.budget).toFixed(2), t.location]);
+            });
+        } 
+        else if (type === 'landlords') {
+            title = "Vusani Ikhaya Properties - Landlords List";
+            head = [['Name', 'Contact', 'Address', 'Property Type', 'Rent (R)']];
+            landlords.forEach(l => {
+                body.push([l.name, l.contact, l.address, l.propType, parseFloat(l.rent).toFixed(2)]);
+            });
+        } 
+        else if (type === 'matches') {
+            title = "Vusani Ikhaya Properties - Matched Pairs";
+            head = [['Tenant Name', 'Tenant Contact', 'Landlord Name', 'Landlord Contact', 'Address', 'Rent (R)']];
+            const m = getMatches();
+            m.forEach(match => {
+                body.push([
+                    match.tenant.name, 
+                    match.tenant.contact, 
+                    match.landlord.name, 
+                    match.landlord.contact, 
+                    match.landlord.address,
+                    parseFloat(match.landlord.rent).toFixed(2)
+                ]);
+            });
+        }
+
+        doc.text(title, 14, 15);
+        doc.autoTable({
+            head: head,
+            body: body,
+            startY: 25,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 58, 138] }
+        });
+
+        doc.save(`${type}_list.pdf`);
+    }
+
+    // ============================================================
+    //  UPDATE STATS
+    // ============================================================
+    function updateStats() {
+        document.getElementById('statsLandlords').textContent = landlords.length;
+        document.getElementById('statsTenants').textContent = tenants.length;
+        document.getElementById('statsMatches').textContent = getMatches().length;
+        document.getElementById('statsAppointments').textContent = appointments.length;
+        document.getElementById('statsAvailable').textContent = landlords.filter(l => l.available).length;
+    }
+
+    // ============================================================
+    //  AUTO-REFRESH & INIT
+    // ============================================================
+    // Auto-refresh every 10 seconds
+    setInterval(() => {
+        renderAll();
+    }, 10000);
+
+    // Check appointments for reminders every minute
+    setInterval(() => {
+        const now = new Date();
+        appointments.forEach(a => {
+            if (!a.dateTime) return;
+            const apptTime = new Date(a.dateTime);
+            const diffMins = (apptTime - now) / 60000;
+
+            if (diffMins <= 61 && diffMins >= 59) {
+                if (!a.tenantReminded) {
+                    const tMsg = `Reminder: You have an appointment for viewing in 1 hour at ${a.address}.`;
+                    sendWhatsApp(a.ttNum, tMsg);
+                    a.tenantReminded = true;
+                }
+                if (!a.landlordReminded) {
+                    const lMsg = `Reminder: You have an appointment with ${a.ttName} in 1 hour at ${a.address}.`;
+                    sendWhatsApp(a.llNum, lMsg);
+                    a.landlordReminded = true;
+                }
+                saveData();
+            }
+        });
+    }, 60000);
+
+    // Load data and render
+    loadData();
+    renderAll();
+    console.log("✅ Vusani Ikhaya Properties loaded successfully!");
+    console.log("📊 Landlords:", landlords.length, "Tenants:", tenants.length);
+</script>
+</body>
+</html>

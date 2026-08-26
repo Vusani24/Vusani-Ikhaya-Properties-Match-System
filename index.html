@@ -112,11 +112,6 @@
         .media-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 15px; }
         .media-gallery-item { background: #e2e8f0; border-radius: 8px; height: 150px; overflow: hidden; cursor: pointer; position: relative; }
         .media-gallery-item img, .media-gallery-item video { width: 100%; height: 100%; object-fit: cover; }
-        .media-gallery-item .play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; color: white; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .thumbnail-nav { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; justify-content: center; }
-        .thumbnail-nav-item { width: 50px; height: 50px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid #e2e8f0; }
-        .thumbnail-nav-item.active { border-color: #3b82f6; }
-        .thumbnail-nav-item img, .thumbnail-nav-item video { width: 100%; height: 100%; object-fit: cover; }
         .match-score { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
         .match-score.high { background: #d1fae5; color: #0b5e42; }
         .match-score.medium { background: #fef3c7; color: #92400e; }
@@ -355,12 +350,16 @@
     //  ADD LANDLORD (with multiple images)
     // ============================================================
     function addLandlord() {
+        console.log("addLandlord() called");
+        
         const name = document.getElementById('llName').value.trim();
         const propType = document.getElementById('llPropType').value;
         const address = document.getElementById('llAddress').value;
         const rent = document.getElementById('llRent').value.trim();
         const contact = document.getElementById('llContact').value.trim();
         const fileInput = document.getElementById('llMedia');
+        
+        console.log("Name:", name, "Contact:", contact, "Rent:", rent);
         
         if (!name || !contact) {
             alert('Please fill all required fields (Name and Contact).');
@@ -420,6 +419,8 @@
     }
 
     function saveLandlordWithMedia(name, propType, address, rent, contact, mediaFiles) {
+        console.log("Saving landlord with", mediaFiles.length, "media files");
+        
         landlords.push({
             id: nextId++, 
             name, 
@@ -448,10 +449,14 @@
     //  ADD TENANT
     // ============================================================
     function addTenant() {
+        console.log("addTenant() called");
+        
         const name = document.getElementById('ttName').value.trim();
         const budget = document.getElementById('ttBudget').value.trim();
         const location = document.getElementById('ttLocation').value;
         const contact = document.getElementById('ttContact').value.trim();
+
+        console.log("Name:", name, "Budget:", budget, "Contact:", contact);
 
         if (!name || !contact) {
             alert('Please fill all required fields (Name and Contact).');
@@ -476,32 +481,43 @@
         document.getElementById('ttName').value = '';
         document.getElementById('ttBudget').value = '';
         document.getElementById('ttContact').value = '';
+        
+        alert('✅ Tenant added successfully!');
     }
 
     // ============================================================
     //  TOGGLE & DELETE
     // ============================================================
     function toggleAvailability(id) {
+        console.log("toggleAvailability() called for ID:", id);
         const l = landlords.find(x => x.id === id);
-        if (l) { l.available = !l.available; saveData(); renderAll(); }
+        if (l) { 
+            l.available = !l.available; 
+            saveData(); 
+            renderAll(); 
+        }
     }
 
     function deleteLandlord(id) {
+        console.log("deleteLandlord() called for ID:", id);
         if (!confirm('Remove this room?')) return;
         landlords = landlords.filter(l => l.id !== id);
         saveData(); renderAll();
     }
 
     function deleteTenant(id) {
+        console.log("deleteTenant() called for ID:", id);
         if (!confirm('Remove this tenant?')) return;
         tenants = tenants.filter(t => t.id !== id);
         saveData(); renderAll();
     }
 
     function clearAll() {
+        console.log("clearAll() called");
         if (!confirm('Delete ALL data? This cannot be undone!')) return;
         landlords = []; tenants = []; appointments = []; nextId = 1;
         saveData(); renderAll();
+        alert('✅ All data cleared!');
     }
 
     // ============================================================
@@ -560,82 +576,89 @@
     }
 
     // ============================================================
-    //  APPOINTMENTS
+    //  RENDER FUNCTIONS
     // ============================================================
-    function saveAppointment() {
-        const id = document.getElementById('editApptId').value;
-        const desc = document.getElementById('appointmentDesc').value.trim();
-        const dateTime = document.getElementById('appointmentDateTime').value;
-        const llName = document.getElementById('apptLLName').value.trim();
-        const llNum = document.getElementById('apptLLNum').value.trim();
-        const address = document.getElementById('apptAddress').value.trim();
-        const ttName = document.getElementById('apptTTName').value.trim();
-        const ttNum = document.getElementById('apptTTNum').value.trim();
+    function renderAll() {
+        console.log("renderAll() called - Landlords:", landlords.length, "Tenants:", tenants.length);
+        renderLandlords();
+        renderTenants();
+        renderMatches();
+        renderAppointments();
+        updateStats();
+    }
 
-        if (!desc || !dateTime || !llName || !ttNum || !address) {
-            alert('Please fill all required appointment fields.');
+    function renderLandlords() {
+        const tbody = document.getElementById('landlordTableBody');
+        if (landlords.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No rooms added yet.</td></tr>`;
+            return;
+        }
+        let html = '';
+        landlords.forEach(l => {
+            const statusBadge = l.available 
+                ? '<span class="badge badge-green">🟢 Available</span>'
+                : '<span class="badge badge-red">🔴 Offline</span>';
+            
+            const mediaCount = l.mediaFiles ? l.mediaFiles.length : 0;
+            
+            html += `
+                <tr class="clickable-row" onclick="showLandlordDetail(${l.id})">
+                    <td>${statusBadge}</td>
+                    <td><strong>${esc(l.name)}</strong></td>
+                    <td>${esc(l.propType)}</td>
+                    <td>${esc(l.address)}</td>
+                    <td>R${parseFloat(l.rent).toFixed(2)}</td>
+                    <td><span class="contact-chip">${esc(l.contact)}</span></td>
+                    <td>${mediaCount} 📸</td>
+                    <td>
+                        <button class="btn btn-sm ${l.available ? 'btn-warning' : 'btn-success'}" onclick="event.stopPropagation();toggleAvailability(${l.id})">
+                            ${l.available ? 'Set Offline' : 'Set Online'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLandlord(${l.id})">✕</button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderTenants() {
+        const tbody = document.getElementById('tenantTableBody');
+        if (tenants.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet.</td></tr>`;
+            return;
+        }
+        let html = '';
+        tenants.forEach(t => {
+            html += `
+                <tr class="clickable-row" onclick="showTenantDetail(${t.id})">
+                    <td><strong>${esc(t.name)}</strong></td>
+                    <td>R${parseFloat(t.budget).toFixed(2)}</td>
+                    <td>${esc(t.location)}</td>
+                    <td><span class="contact-chip">${esc(t.contact)}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteTenant(${t.id})">✕</button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderMatches() {
+        const container = document.getElementById('matchesContainer');
+        const matches = getMatches();
+
+        if (matches.length === 0) {
+            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and available rooms with matching budgets &amp; locations.</div>`;
             return;
         }
 
-        if (id) {
-            const appt = appointments.find(a => a.id == id);
-            if (appt) {
-                appt.desc = desc; appt.dateTime = dateTime; appt.llName = llName;
-                appt.llNum = llNum; appt.address = address; appt.ttName = ttName; appt.ttNum = ttNum;
-                appt.tenantReminded = false; appt.landlordReminded = false;
-            }
-        } else {
-            appointments.push({
-                id: nextId++, desc, dateTime, llName, llNum, address, ttName, ttNum,
-                tenantReminded: false, landlordReminded: false
-            });
-        }
-
-        clearAppointmentForm();
-        document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
-        saveData(); renderAll();
-    }
-
-    function clearAppointmentForm() {
-        document.getElementById('editApptId').value = '';
-        document.getElementById('appointmentDesc').value = '';
-        document.getElementById('appointmentDateTime').value = '';
-        document.getElementById('apptLLName').value = '';
-        document.getElementById('apptLLNum').value = '';
-        document.getElementById('apptAddress').value = '';
-        document.getElementById('apptTTName').value = '';
-        document.getElementById('apptTTNum').value = '';
-    }
-
-    function editAppointment(id) {
-        const a = appointments.find(x => x.id == id);
-        if (!a) return;
-        document.getElementById('editApptId').value = a.id;
-        document.getElementById('appointmentDesc').value = a.desc;
-        document.getElementById('appointmentDateTime').value = a.dateTime;
-        document.getElementById('apptLLName').value = a.llName;
-        document.getElementById('apptLLNum').value = a.llNum;
-        document.getElementById('apptAddress').value = a.address;
-        document.getElementById('apptTTName').value = a.ttName;
-        document.getElementById('apptTTNum').value = a.ttNum;
-        document.getElementById('apptSaveBtn').innerText = 'Update Appointment';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }
-
-    function deleteAppointment(id) {
-        if (!confirm('Remove this appointment?')) return;
-        appointments = appointments.filter(a => a.id != id);
-        saveData(); renderAll();
-    }
-
-    function sendWhatsApp(phoneNum, message) {
-        if (!phoneNum) {
-            alert('No phone number available!');
-            return;
-        }
-        let cleanNum = phoneNum.replace(/\D/g, '');
-        if (cleanNum.startsWith('0')) {
-            cleanNum = '27' + cleanNum.substring(1);
-        }
-        if (cleanNum.length < 10) {
-            alert('
+        let html = `<div class="match-grid">`;
+        matches.forEach(m => {
+            const t = m.tenant, l = m.landlord;
+            
+            // Get score class
+            let scoreClass = 'low';
+            if (m.matchScore >= 70) scoreClass = 'high';
+            else if (m.matchScore >= 

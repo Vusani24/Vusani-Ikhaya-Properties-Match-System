@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vusani Ikhaya Properties Property Match System</title>
+    <!-- jsPDF Library for PDF Downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* ----- RESET & BASE ----- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f9;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container { max-width: 1500px; margin: 0 auto; }
+
+        /* ----- HEADER ----- */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 15px; margin-bottom: 20px;
+        }
+        h1 { font-size: 2rem; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #1e3a8a; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        /* ----- CARDS ----- */
+        .card {
+            background: white; border-radius: 16px; padding: 20px 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 24px;
+            border: 1px solid #e9edf2; transition: 0.2s;
+        }
+        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+
+        /* ----- FORMS ----- */
+        .form-row { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; flex: 1 0 140px; }
+        .form-group label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 10px 12px; border: 1px solid #d1d9e6; border-radius: 10px;
+            font-size: 0.95rem; background: #fafcff; transition: 0.2s; font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+
+        /* ----- BUTTONS ----- */
+        .btn {
+            background: #3b82f6; color: white; border: none; padding: 10px 22px;
+            border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
+            transition: 0.2s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+        }
+        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        .btn-success { background: #22c55e; } .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; } .btn-danger:hover { background: #dc2626; }
+        .btn-warning { background: #f59e0b; color: #1e293b; } .btn-warning:hover { background: #d97706; }
+        .btn-outline { background: transparent; color: #3b82f6; border: 1.5px solid #3b82f6; }
+        .btn-outline:hover { background: #eff6ff; transform: translateY(-2px); }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+        .btn-whatsapp { background: #25D366; color: white; }
+        .btn-whatsapp:hover { background: #128C7E; }
+
+        /* ----- TABLES ----- */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: #f1f5f9; text-align: left; padding: 10px 12px; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 10px 12px; border-bottom: 1px solid #eef2f6; vertical-align: middle; }
+        tr:hover td { background: #f8fafc; }
+        .clickable-row { cursor: pointer; }
+        .clickable-row:hover td { background: #eef2ff !important; }
+
+        /* ----- BADGES ----- */
+        .badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+        .badge-green { background: #d1fae5; color: #0b5e42; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+
+        /* ----- MATCH GRID ----- */
+        .match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .match-card {
+            background: #f8fafc; border-radius: 12px; padding: 16px;
+            border-left: 4px solid #3b82f6; transition: 0.2s;
+        }
+        .match-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .match-card .tenant-name { font-weight: 700; font-size: 1.1rem; color: #1e293b; }
+        .match-card .room-detail { color: #475569; margin: 6px 0; font-size: 0.9rem; }
+        .match-card .price { color: #059669; font-weight: 600; }
+        .match-card .contact { background: white; padding: 4px 12px; border-radius: 30px; border: 1px solid #d1d9e6; display: inline-block; font-size: 0.85rem; margin-top: 6px; }
+        .media-thumb { width: 100%; height: 180px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 8px 0; cursor: pointer; position: relative; }
+        .media-thumb img, .media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+        .media-thumb-overlay { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; }
+
+        /* ----- MODAL ----- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white; border-radius: 20px; max-width: 800px; width: 100%;
+            max-height: 90vh; overflow-y: auto; padding: 30px; position: relative; animation: slideIn 0.3s ease;
+        }
+        .modal-media {
+            background: black; border-radius: 12px; overflow: hidden; margin-bottom: 15px; width: 100%; height: 500px; display: flex; align-items: center; justify-content: center;
+        }
+        .modal-media img, .modal-media video { width: 100%; height: 100%; object-fit: contain; }
+        @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-close { position: sticky; top: 0; float: right; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: #94a3b8; }
+        .modal-close:hover { color: #1e293b; transform: rotate(90deg); }
+        .modal h2 { margin-bottom: 16px; font-size: 1.5rem; }
+        .modal .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eef2f6; }
+        .modal .detail-row strong { color: #475569; }
+
+        /* ----- MISC ----- */
+        .empty-state { text-align: center; color: #94a3b8; padding: 30px 10px; font-style: italic; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .text-muted { color: #64748b; font-size: 0.9rem; }
+        .stats { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+        .stats span { background: #e9edf2; padding: 4px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; }
+        .stats strong { font-weight: 700; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+        .contact-chip { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; display: inline-block; }
+        .appointment-item { background: #f1f5f9; padding: 12px 16px; border-radius: 10px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div>
+            <h1>🏠 Vusani Ikhaya Properties</h1>
+            <div class="text-muted">Property Match System • Auto-refreshes every 10s</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline" onclick="renderAll()">🔄 Manual Refresh</button>
+            <button class="btn btn-success" onclick="exportPDF('tenants')">📥 Tenants PDF</button>
+            <button class="btn btn-success" onclick="exportPDF('landlords')">📥 Landlords PDF</button>
+            <button class="btn btn-success" onclick="exportPDF('matches')">🔗 Matches PDF</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑️ Clear All Data</button>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+        <span>🏢 Landlords: <strong id="statsLandlords">0</strong></span>
+        <span>🧑‍💼 Tenants: <strong id="statsTenants">0</strong></span>
+        <span>🔗 Matches: <strong id="statsMatches">0</strong></span>
+        <span>📅 Appointments: <strong id="statsAppointments">0</strong></span>
+        <span>🟢 Available Rooms: <strong id="statsAvailable">0</strong></span>
+    </div>
+
+    <!-- ====== FORMS ====== -->
+    <div class="grid-2">
+        <!-- LANDLORD FORM -->
+        <div class="card">
+            <h2>🏢 Add Landlord / Room</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="llName" placeholder="Landlord name" />
+                </div>
+                <div class="form-group">
+                    <label>Property Type</label>
+                    <select id="llPropType">
+                        <option value="Backroom">Backroom</option>
+                        <option value="Inside Room">Inside Room (Single)</option>
+                        <option value="Bachelor">Bachelor</option>
+                        <option value="1 Bedroom House">1 Bedroom House</option>
+                        <option value="2 Bedroom House">2 Bedroom House</option>
+                        <option value="3 Bedroom House">3 Bedroom House</option>
+                        <option value="4 Bedroom House">4 Bedroom House</option>
+                        <option value="5 Bedroom House">5 Bedroom House</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <select id="llAddress">
+                        <option value="Alex 1st Ave - 12th Ave">Alex 1st Ave - 12th Ave</option>
+                        <option value="Alex 12th Ave - 23rd Ave">Alex 12th Ave - 23rd Ave</option>
+                        <option value="Tsutsumane">Tsutsumane</option>
+                        <option value="Ext 7">Ext 7</option>
+                        <option value="Ext 8">Ext 8</option>
+                        <option value="Ext 9">Ext 9</option>
+                        <option value="River Park">River Park</option>
+                        <option value="Marlboro">Marlboro</option>
+                        <option value="Kelvin">Kelvin</option>
+                        <option value="Lombardy">Lombardy</option>
+                        <option value="Bramley View">Bramley View</option>
+                        <option value="Sandton">Sandton</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rent (Rands)</label>
+                    <select id="llRent">
+                        <option value="R800-R1500">R800 - R1500</option>
+                        <option value="R1500-R2200">R1500 - R2200</option>
+                        <option value="R2300-R3500">R2300 - R3500</option>
+                        <option value="R3600-R6000">R3600 - R6000</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contact</label>
+                    <input type="text" id="llContact" placeholder="phone / email" />
+                </div>
+                <div class="form-group" style="flex: 1 0 100%;">
+                    <label>Upload Photo / Video</label>
+                    <input type="file" id="llMedia" accept="image/*,video/*" />
+                </div>
+                <div class="form-group" style="flex: 0 0 auto;">
+                    <button class="btn" onclick="addLandlord()">+ Add Room</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TENANT FORM -->
+        <div class="card">
+            <h2>🧑‍💼 Add Tenant</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="ttName" placeholder="Tenant name" />
+                </div>
+                <div class="form-group">
+                    <label>Max Budget (Rands)</label>
+                    <select id="ttBudget">
+                        <option value="R800-R1500">R800 - R1500</option>
+                        <option value="R1500-R2200">R1500 - R2200</option>
+                        <option value="R2300-R3500">R2300 - R3500</option>
+                        <option value="R3600-R6000">R3600 - R6000</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Preferred Location</label>
+                    <select id="ttLocation">
+                        <option value="Alex 1st Ave - 12th Ave">Alex 1st Ave - 12th Ave</option>
+                        <option value="Alex 12th Ave - 23rd Ave">Alex 12th Ave - 23rd Ave</option>
+                        <option value="Tsutsumane">Tsutsumane</option>
+                        <option value="Ext 7">Ext 7</option>
+                        <option value="Ext 8">Ext 8</option>
+                        <option value="Ext 9">Ext 9</option>
+                        <option value="River Park">River Park</option>
+                        <option value="Marlboro">Marlboro</option>
+                        <option value="Kelvin">Kelvin</option>
+                        <option value="Lombardy">Lombardy</option>
+                        <option value="Bramley View">Bramley View</option>
+                        <option value="Sandton">Sandton</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contact</label>
+                    <input type="text" id="ttContact" placeholder="phone / email" />
+                </div>
+                <div class="form-group" style="flex: 0 0 auto;">
+                    <button class="btn" onclick="addTenant()">+ Add Tenant</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== LANDLORDS TABLE ====== -->
+    <div class="card">
+        <div class="flex-between">
+            <h2>🏢 Landlords &amp; Rooms</h2>
+            <span class="text-muted">Click a row to view media &amp; details</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Landlord</th>
+                        <th>Property Type</th>
+                        <th>Location</th>
+                        <th>Rent</th>
+                        <th>Contact</th>
+                        <th style="width:140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="landlordTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ====== TENANTS TABLE ====== -->
+    <div class="card">
+        <div class="flex-between">
+            <h2>🧑‍💼 Tenants</h2>
+            <span class="text-muted">Click a tenant to see their matched rooms</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Budget</th>
+                        <th>Preferred Location</th>
+                        <th>Contact</th>
+                        <th style="width:100px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tenantTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ====== MATCHES ====== -->
+    <div class="card">
+        <div class="flex-between">
+            <h2>🔗 Auto Matches (Tenants → Available Rooms)</h2>
+            <span class="text-muted">Click media to view large screen</span>
+        </div>
+        <div id="matchesContainer"></div>
+    </div>
+
+    <!-- ====== APPOINTMENTS ====== -->
+    <div class="card">
+        <h2>📅 Appointments</h2>
+        <div class="form-row" style="margin-bottom:16px;">
+            <input type="hidden" id="editApptId" />
+            <div class="form-group" style="flex: 1 0 100%;"><h3 style="font-size:1rem;">Landlord Details</h3></div>
+            <div class="form-group"><label>Landlord Name</label><input type="text" id="apptLLName" placeholder="Landlord Name" /></div>
+            <div class="form-group"><label>Landlord Number</label><input type="text" id="apptLLNum" placeholder="e.g. 0821234567" /></div>
+            <div class="form-group" style="flex: 2;"><label>Address</label><input type="text" id="apptAddress" placeholder="Viewing Address" /></div>
+            
+            <div class="form-group" style="flex: 1 0 100%; margin-top:10px;"><h3 style="font-size:1rem;">Tenant Details</h3></div>
+            <div class="form-group"><label>Tenant Name</label><input type="text" id="apptTTName" placeholder="Tenant Name" /></div>
+            <div class="form-group"><label>Tenant Number</label><input type="text" id="apptTTNum" placeholder="e.g. 0827654321" /></div>
+            
+            <div class="form-group" style="flex: 1 0 100%; margin-top:10px;"><h3 style="font-size:1rem;">Schedule</h3></div>
+            <div class="form-group" style="flex: 2;"><label>Description</label><input type="text" id="appointmentDesc" placeholder="e.g. Room Viewing" /></div>
+            <div class="form-group"><label>Date &amp; Time</label><input type="datetime-local" id="appointmentDateTime" /></div>
+            <div class="form-group" style="flex: 0 0 auto;">
+                <button class="btn btn-success" onclick="saveAppointment()" id="apptSaveBtn">+ Add Appointment</button>
+            </div>
+        </div>
+        <div id="appointmentsContainer"></div>
+    </div>
+
+</div>
+
+<!-- ====== MODAL ====== -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  DATA STORE (Frontend LocalStorage)
+    // ============================================================
+    let landlords = [];
+    let tenants = [];
+    let appointments = [];
+    let nextId = 1;
+
+    function loadData() {
+        try {
+            const saved = localStorage.getItem('vusaniIkhayaData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                landlords = parsed.landlords || [];
+                tenants = parsed.tenants || [];
+                appointments = parsed.appointments || [];
+                nextId = parsed.nextId || 1;
+            }
+        } catch (e) { console.error("Load error", e); }
+    }
+
+    function saveData() {
+        try {
+            localStorage.setItem('vusaniIkhayaData', JSON.stringify({ landlords, tenants, appointments, nextId }));
+        } catch (e) {
+            alert("Storage limit reached! Please clear old data or upload smaller videos/images.");
+        }
+    }
+
+    function esc(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ============================================================
+    //  ADD FUNCTIONS
+    // ============================================================
+    function addLandlord() {
+        const name = document.getElementById('llName').value.trim();
+        const propType = document.getElementById('llPropType').value;
+        const address = document.getElementById('llAddress').value;
+        const rent = document.getElementById('llRent').value;
+        const contact = document.getElementById('llContact').value.trim();
+        const fileInput = document.getElementById('llMedia');
+        
+        if (!name || !contact) {
+            alert('Please fill all required fields.');
+            return;
+        }
+
+        let mediaData = null;
+        let mediaType = null;
+
+        if (fileInput.files[0]) {
+            const file = fileInput.files[0];
+            if (file.size > 4 * 1024 * 1024) { 
+                if (!confirm("The file is large and may exceed browser storage limits. Continue?")) return;
+            }
+            mediaType = file.type.startsWith('video') ? 'video' : 'image';
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                mediaData = e.target.result;
+                landlords.push({
+                    id: nextId++, name, propType, address, rent, contact, mediaData, mediaType, available: true
+                });
+                saveData(); renderAll();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            landlords.push({
+                id: nextId++, name, propType, address, rent, contact, mediaData: null, mediaType: null, available: true
+            });
+            saveData(); renderAll();
+        }
+
+        document.getElementById('llName').value = '';
+        document.getElementById('llContact').value = '';
+        document.getElementById('llMedia').value = '';
+    }
+
+    function addTenant() {
+        const name = document.getElementById('ttName').value.trim();
+        const budget = document.getElementById('ttBudget').value;
+        const location = document.getElementById('ttLocation').value;
+        const contact = document.getElementById('ttContact').value.trim();
+
+        if (!name || !contact) {
+            alert('Please fill all required fields.');
+            return;
+        }
+
+        tenants.push({ id: nextId++, name, budget, location, contact });
+        saveData(); renderAll();
+
+        document.getElementById('ttName').value = '';
+        document.getElementById('ttContact').value = '';
+    }
+
+    function toggleAvailability(id) {
+        const l = landlords.find(x => x.id === id);
+        if (l) { l.available = !l.available; saveData(); renderAll(); }
+    }
+
+    function deleteLandlord(id) {
+        if (!confirm('Remove this room?')) return;
+        landlords = landlords.filter(l => l.id !== id);
+        saveData(); renderAll();
+    }
+
+    function deleteTenant(id) {
+        if (!confirm('Remove this tenant?')) return;
+        tenants = tenants.filter(t => t.id !== id);
+        saveData(); renderAll();
+    }
+
+    function clearAll() {
+        if (!confirm('Delete ALL data? This cannot be undone!')) return;
+        landlords = []; tenants = []; appointments = []; nextId = 1;
+        saveData(); renderAll();
+    }
+
+    // ============================================================
+    //  APPOINTMENTS
+    // ============================================================
+    function saveAppointment() {
+        const id = document.getElementById('editApptId').value;
+        const desc = document.getElementById('appointmentDesc').value.trim();
+        const dateTime = document.getElementById('appointmentDateTime').value;
+        const llName = document.getElementById('apptLLName').value.trim();
+        const llNum = document.getElementById('apptLLNum').value.trim();
+        const address = document.getElementById('apptAddress').value.trim();
+        const ttName = document.getElementById('apptTTName').value.trim();
+        const ttNum = document.getElementById('apptTTNum').value.trim();
+
+        if (!desc || !dateTime || !llName || !ttNum || !address) {
+            alert('Please fill Appointment Description, Date, Landlord Name, Address, and Tenant Number.');
+            return;
+        }
+
+        if (id) {
+            const appt = appointments.find(a => a.id == id);
+            if (appt) {
+                appt.desc = desc; appt.dateTime = dateTime; appt.llName = llName;
+                appt.llNum = llNum; appt.address = address; appt.ttName = ttName; appt.ttNum = ttNum;
+                appt.tenantReminded = false; 
+                appt.landlordReminded = false;
+            }
+        } else {
+            appointments.push({
+                id: nextId++, desc, dateTime, llName, llNum, address, ttName, ttNum, tenantReminded: false, landlordReminded: false
+            });
+        }
+
+        document.getElementById('editApptId').value = '';
+        document.getElementById('appointmentDesc').value = '';
+        document.getElementById('appointmentDateTime').value = '';
+        document.getElementById('apptLLName').value = '';
+        document.getElementById('apptLLNum').value = '';
+        document.getElementById('apptAddress').value = '';
+        document.getElementById('apptTTName').value = '';
+        document.getElementById('apptTTNum').value = '';
+        document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
+
+        saveData(); renderAll();
+    }
+
+    function editAppointment(id) {
+        const a = appointments.find(x => x.id == id);
+        if (!a) return;
+        
+        document.getElementById('editApptId').value = a.id;
+        document.getElementById('appointmentDesc').value = a.desc;
+        document.getElementById('appointmentDateTime').value = a.dateTime;
+        document.getElementById('apptLLName').value = a.llName;
+        document.getElementById('apptLLNum').value = a.llNum;
+        document.getElementById('apptAddress').value = a.address;
+        document.getElementById('apptTTName').value = a.ttName;
+        document.getElementById('apptTTNum').value = a.ttNum;
+        document.getElementById('apptSaveBtn').innerText = 'Update Appointment';
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function deleteAppointment(id) {
+        if (!confirm('Remove this appointment?')) return;
+        appointments = appointments.filter(a => a.id != id);
+        saveData(); renderAll();
+    }
+
+    function sendWhatsApp(tenantNum, message) {
+        let cleanNum = tenantNum.replace(/\D/g, '');
+        if (cleanNum.startsWith('0')) {
+            cleanNum = '27' + cleanNum.substring(1);
+        }
+        const url = `https://wa.me/${cleanNum}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+    }
+
+    // ============================================================
+    //  MATCHING ENGINE
+    // ============================================================
+    function getMatches() {
+        const matches = [];
+        const availableLandlords = landlords.filter(l => l.available === true);
+
+        tenants.forEach(tenant => {
+            const matchedRooms = availableLandlords.filter(landlord => {
+                return tenant.budget === landlord.rent && tenant.location === landlord.address;
+            });
+
+            matchedRooms.forEach(room => {
+                matches.push({ tenant, landlord: room });
+            });
+        });
+
+        return matches;
+    }
+
+    // ============================================================
+    //  EXPORT TO PDF
+    // ============================================================
+    function exportPDF(type) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let head = [];
+        let body = [];
+        let title = "";
+
+        if (type === 'tenants') {
+            title = "Vusani Ikhaya Properties - Tenants List";
+            head = [['Name', 'Contact Number', 'Budget', 'Preferred Location']];
+            tenants.forEach(t => {
+                body.push([t.name, t.contact, t.budget, t.location]);
+            });
+        } 
+        else if (type === 'landlords') {
+            title = "Vusani Ikhaya Properties - Landlords List";
+            head = [['Name', 'Contact Number', 'Address', 'Property Type', 'Rent']];
+            landlords.forEach(l => {
+                body.push([l.name, l.contact, l.address, l.propType, l.rent]);
+            });
+        } 
+        else if (type === 'matches') {
+            title = "Vusani Ikhaya Properties - Matched Pairs";
+            head = [['Tenant Name', 'Tenant Number', 'Landlord Name', 'Landlord Number', 'Landlord Address']];
+            const m = getMatches();
+            m.forEach(match => {
+                body.push([match.tenant.name, match.tenant.contact, match.landlord.name, match.landlord.contact, match.landlord.address]);
+            });
+        }
+
+        doc.text(title, 14, 15);
+        doc.autoTable({
+            head: head,
+            body: body,
+            startY: 25,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 58, 138] }
+        });
+
+        doc.save(`${type}_list.pdf`);
+    }
+
+    // ============================================================
+    //  RENDER
+    // ============================================================
+    function renderAll() {
+        renderLandlords();
+        renderTenants();
+        renderMatches();
+        renderAppointments();
+        updateStats();
+    }
+
+    function renderLandlords() {
+        const tbody = document.getElementById('landlordTableBody');
+        if (landlords.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet.</td></tr>`;
+            return;
+        }
+        let html = '';
+        landlords.forEach(l => {
+            const statusBadge = l.available 
+                ? '<span class="badge badge-green">🟢 Available</span>'
+                : '<span class="badge badge-red">🔴 Offline</span>';
+            
+            html += `
+                <tr class="clickable-row" onclick="showLandlordDetail(${l.id})">
+                    <td>${statusBadge}</td>
+                    <td><strong>${esc(l.name)}</strong></td>
+                    <td>${esc(l.propType)}</td>
+                    <td>${esc(l.address)}</td>
+                    <td>${esc(l.rent)}</td>
+                    <td><span class="contact-chip">${esc(l.contact)}</span></td>
+                    <td>
+                        <button class="btn btn-sm ${l.available ? 'btn-warning' : 'btn-success'}" onclick="event.stopPropagation();toggleAvailability(${l.id})">
+                            ${l.available ? 'Set Offline' : 'Set Online'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLandlord(${l.id})">✕</button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderTenants() {
+        const tbody = document.getElementById('tenantTableBody');
+        if (tenants.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet.</td></tr>`;
+            return;
+        }
+        let html = '';
+        tenants.forEach(t => {
+            html += `
+                <tr class="clickable-row" onclick="showTenantDetail(${t.id})">
+                    <td><strong>${esc(t.name)}</strong></td>
+                    <td>${esc(t.budget)}</td>
+                    <td>${esc(t.location)}</td>
+                    <td><span class="contact-chip">${esc(t.contact)}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteTenant(${t.id})">✕</button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderMatches() {
+        const container = document.getElementById('matchesContainer');
+        const matches = getMatches();
+
+        if (matches.length === 0) {
+            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and available rooms with matching budgets &amp; locations.</div>`;
+            return;
+        }
+
+        let html = `<div class="match-grid">`;
+        matches.forEach(m => {
+            const t = m.tenant, l = m.landlord;
+            let mediaHtml = '<div class="media-thumb"><span style="color:#94a3b8;align-self:center;">📷 No media</span></div>';
+            
+            if (l.mediaData && l.mediaType === 'image') {
+                mediaHtml = `<div class="media-thumb" onclick="openMediaModal('${l.mediaData}', 'image')">
+                    <img src="${l.mediaData}" alt="Room Photo">
+                    <div class="media-thumb-overlay">🔍 View Photo</div>
+                </div>`;
+            } else if (l.mediaData && l.mediaType === 'video') {
+                mediaHtml = `<div class="media-thumb" onclick="openMediaModal('${l.mediaData}', 'video')">
+                    <video src="${l.mediaData}"></video>
+                    <div class="media-thumb-overlay">▶️ Play Video</div>
+                </div>`;
+            }
+
+            const waMessage = `Hello ${t.name}, we have a ${l.propType} available at ${l.address}. The rent is ${l.rent}. Let me know if you are interested!`;
+            
+            html += `
+                <div class="match-card">
+                    <div class="tenant-name">${esc(t.name)} ↔️ ${esc(l.name)}</div>
+                    <div class="room-detail">🏠 ${esc(l.propType)}</div>
+                    <div class="room-detail">📍 ${esc(l.address)}</div>
+                    <div class="room-detail">💰 <span class="price">${esc(l.rent)}</span></div>
+                    <div class="room-detail">💼 Tenant Budget: ${esc(t.budget)}</div>
+                    ${mediaHtml}
+                    <div>
+                        <span class="contact">📞 Tenant: ${esc(t.contact)}</span>
+                        <span class="contact" style="margin-left:6px;">📞 Landlord: ${esc(l.contact)}</span>
+                    </div>
+                    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsApp('${esc(t.contact)}', \`${waMessage}\`)">💬 WhatsApp Tenant</button>
+                        <button class="btn btn-sm btn-outline" onclick="autoFillAppointment(${t.id}, ${l.id})">📅 Set Appt</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderAppointments() {
+        const container = document.getElementById('appointmentsContainer');
+        if (appointments.length === 0) {
+            container.innerHTML = `<div class="empty-state">No appointments scheduled.</div>`;
+            return;
+        }
+
+        let html = '';
+        appointments.sort((a,b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+        appointments.forEach(a => {
+            const date = new Date(a.dateTime);
+            const formatted = date.toLocaleString();
+            const waMessage = `Hello ${a.ttName}, you have an appointment for viewing on ${formatted} at ${a.address}. My number is 0685353186, WhatsApp this number when you're at the location.`;
+            
+            html += `
+                <div class="appointment-item">
+                    <div style="flex: 1 0 200px;">
+                        <strong>📅 ${formatted}</strong><br>
+                        ${esc(a.desc)}<br>
+                        <small>
+                            🏢 Landlord: ${esc(a.llName)} (${esc(a.llNum)})<br>
+                            📍 Address: ${esc(a.address)}<br>
+                            🧑‍💼 Tenant: ${esc(a.ttName)} (${esc(a.ttNum)})
+                        </small>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-whatsapp" onclick="sendWhatsApp('${esc(a.ttNum)}', \`${waMessage}\`)">💬 Send WA</button>
+                        <button class="btn btn-sm btn-warning" onclick="editAppointment(${a.id})">✎ Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAppointment(${a.id})">✕ Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function autoFillAppointment(tenantId, landlordId) {
+        const t = tenants.find(x => x.id === tenantId);
+        const l = landlords.find(x => x.id === landlordId);
+        if (!t || !l) return;
+
+        document.getElementById('editApptId').value = '';
+        document.getElementById('appointmentDesc').value = `Viewing at ${l.address}`;
+        document.getElementById('apptLLName').value = l.name;
+        document.getElementById('apptLLNum').value = l.contact;
+        document.getElementById('apptAddress').value = l.address;
+        document.getElementById('apptTTName').value = t.name;
+        document.getElementById('apptTTNum').value = t.contact;
+        document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function updateStats() {
+        document.getElementById('statsLandlords').textContent = landlords.length;
+        document.getElementById('statsTenants').textContent = tenants.length;
+        document.getElementById('statsMatches').textContent = getMatches().length;
+        document.getElementById('statsAppointments').textContent = appointments.length;
+        document.getElementById('statsAvailable').textContent = landlords.filter(l => l.available).length;
+    }
+
+    // ============================================================
+    //  MODAL
+    // ============================================================
+    function openMediaModal(mediaSrc, mediaType) {
+        let mediaHtml = '';
+        if (mediaType === 'image') {
+            mediaHtml = `<img src="${mediaSrc}" alt="Full Image">`;
+        } else if (mediaType === 'video') {
+            mediaHtml = `<video src="${mediaSrc}" controls autoplay></video>`;
+        }
+
+        const modalContent = `
+            <h2>📹 Room Media</h2>
+            <div class="modal-media">${mediaHtml}</div>
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function showLandlordDetail(id) {
+        const l = landlords.find(x => x.id === id);
+        if (!l) return;
+        
+        let mediaHtml = '<p class="empty-state">No media uploaded.</p>';
+        if (l.mediaData && l.mediaType === 'image') {
+            mediaHtml = `<img src="${l.mediaData}" style="width:100%;border-radius:12px;margin-bottom:15px;cursor:pointer;" onclick="openMediaModal('${l.mediaData}', 'image')">`;
+        } else if (l.mediaData && l.mediaType === 'video') {
+            mediaHtml = `<video src="${l.mediaData}" controls style="width:100%;border-radius:12px;margin-bottom:15px;"></video>`;
+        }
+        
+        const modalContent = `
+            <h2>🏢 Room Details</h2>
+            ${mediaHtml}
+            <div class="detail-row"><strong>Landlord:</strong> <span>${esc(l.name)}</span></div>
+            <div class="detail-row"><strong>Property Type:</strong> <span>${esc(l.propType)}</span></div>
+            <div class="detail-row"><strong>Address:</strong> <span>${esc(l.address)}</span></div>
+            <div class="detail-row"><strong>Rent:</strong> <span>${esc(l.rent)}</span></div>
+            <div class="detail-row"><strong>Contact:</strong> <span>${esc(l.contact)}</span></div>
+            <div class="detail-row"><strong>Status:</strong> <span>${l.available ? 'Available' : 'Offline'}</span></div>
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function showTenantDetail(id) {
+        const t = tenants.find(x => x.id === id);
+        if (!t) return;
+        
+        const matchesForTenant = getMatches().filter(m => m.tenant.id === id);
+        
+        const modalContent = `
+            <h2>🧑‍💼 Tenant Details</h2>
+            <div class="detail-row"><strong>Tenant:</strong> <span>${esc(t.name)}</span></div>
+            <div class="detail-row"><strong>Budget:</strong> <span>${esc(t.budget)}</span></div>
+            <div class="detail-row"><strong>Location:</strong> <span>${esc(t.location)}</span></div>
+            <div class="detail-row"><strong>Contact:</strong> <span>${esc(t.contact)}</span></div>
+            <div class="mt-2">
+                <h3 style="font-size:1.1rem;margin:15px 0 8px;">Matched Rooms (${matchesForTenant.length})</h3>
+                ${matchesForTenant.length > 0 ? matchesForTenant.map(m => `<div class="contact" style="display:block;margin-bottom:6px;">🏢 ${esc(m.landlord.name)} - ${esc(m.landlord.address)}</div>`).join('') : '<div class="empty-state">No matched rooms yet.</div>'}
+            </div>
+        `;
+        
+        document.getElementById('modalContent').innerHTML = modalContent;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('detailModal').classList.remove('active');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ============================================================
+    //  AUTOMATIONS & INIT
+    // ============================================================
+    
+    // 1. Auto-refresh data display every 10 seconds
+    setInterval(() => {
+        renderAll();
+    }, 10000);
+
+    // 2. Check appointments every minute for 1-hour reminders
+    function checkAppointmentReminders() {
+        const now = new Date();
+        const myNumber = "0685353186";
+
+        appointments.forEach(a => {
+            if (!a.dateTime) return;
+            const apptTime = new Date(a.dateTime);
+            const diffMins = (apptTime - now) / 60000; 
+
+            if (diffMins <= 61 && diffMins >= 59) {
+                if (!a.tenantReminded) {
+                    const tMsg = `Reminder: You have an appointment for viewing in 1 hour at ${a.address}. My number is ${myNumber}, WhatsApp me when you're at the location.`;
+                    sendWhatsApp(a.ttNum, tMsg);
+                    a.tenantReminded = true;
+                }
+                if (!a.landlordReminded) {
+                    const lMsg = `Reminder: You have an appointment with ${a.ttName} in 1 hour at ${a.address}.`;
+                    sendWhatsApp(myNumber, lMsg);
+                    a.landlordReminded = true;
+                }
+                saveData();
+            }
+        });
+    }
+    
+    setInterval(checkAppointmentReminders, 60000);
+
+    loadData();
+    renderAll();
+</script>
+</body>
+</html>

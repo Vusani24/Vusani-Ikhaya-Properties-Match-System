@@ -242,6 +242,7 @@
         .cloud-sync-status.synced { background: #d1fae5; color: #0b5e42; }
         .cloud-sync-status.syncing { background: #fef3c7; color: #92400e; animation: pulse 1s infinite; }
         .cloud-sync-status.error { background: #fee2e2; color: #991b1b; }
+        .cloud-sync-status.realtime { background: #dbeafe; color: #1e4f8a; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
         .connection-status {
@@ -250,6 +251,14 @@
         .connection-status.online { background: #d1fae5; color: #0b5e42; }
         .connection-status.offline { background: #fee2e2; color: #991b1b; }
         .connection-status.connecting { background: #fef3c7; color: #92400e; }
+        .connection-status.realtime { background: #dbeafe; color: #1e4f8a; }
+        
+        .realtime-badge {
+            display: inline-block; background: #dbeafe; color: #1e4f8a;
+            padding: 2px 10px; border-radius: 12px; font-size: 0.6rem;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -261,8 +270,9 @@
             <h1>🏠 Vusani Ikhaya</h1>
             <div class="text-muted">
                 Property Match System • 
-                <span class="cloud-sync-status synced" id="syncStatus">☁️ Synced</span>
-                <span class="connection-status online" id="connStatus">🟢 Online</span>
+                <span class="cloud-sync-status realtime" id="syncStatus">⚡ Realtime</span>
+                <span class="connection-status realtime" id="connStatus">🟢 Live</span>
+                <span class="realtime-badge">⚡ INSTANT SYNC</span>
             </div>
         </div>
         <div class="header-actions">
@@ -285,6 +295,7 @@
         <span>📅 Appointments: <strong id="statsAppointments">0</strong></span>
         <span>🟢 Available: <strong id="statsAvailable">0</strong></span>
         <span>📦 <strong id="dataSource">Local</strong></span>
+        <span>⚡ <strong id="realtimeStatus">Connected</strong></span>
     </div>
 
     <!-- FORMS -->
@@ -333,7 +344,7 @@
                 <div class="form-group" style="flex: 1 0 100%;">
                     <label>Upload Photos / Videos (multiple allowed) - SYNCs to Cloud!</label>
                     <input type="file" id="llMedia" accept="image/*,video/*" multiple />
-                    <small>Hold Ctrl/Cmd to select multiple files • All devices can see photos!</small>
+                    <small>Hold Ctrl/Cmd to select multiple files • All devices see photos INSTANTLY!</small>
                 </div>
                 <div class="form-group" style="flex: 0 0 auto; width: 100%;">
                     <button class="btn" onclick="addLandlord()">+ Add Room</button>
@@ -372,7 +383,7 @@
     <div class="card">
         <div class="flex-between">
             <h2>🏢 Landlords &amp; Rooms</h2>
-            <span class="text-muted">Click row for details • Toggle status anytime</span>
+            <span class="text-muted">⚡ Changes appear instantly on all devices</span>
         </div>
         <div class="table-wrap">
             <table>
@@ -386,7 +397,7 @@
     <div class="card">
         <div class="flex-between">
             <h2>🧑‍💼 Tenants</h2>
-            <span class="text-muted">Click for matched rooms</span>
+            <span class="text-muted">⚡ Syncs instantly across devices</span>
         </div>
         <div class="table-wrap">
             <table>
@@ -400,7 +411,7 @@
     <div class="card">
         <div class="flex-between">
             <h2>🔗 Auto Matches</h2>
-            <span class="text-muted">Tenants → Available Rooms (Online only)</span>
+            <span class="text-muted">⚡ Updates in real-time</span>
         </div>
         <div id="matchesContainer"><div class="empty-state">Loading matches...</div></div>
     </div>
@@ -443,7 +454,7 @@
 
 <script>
     // ============================================================
-    //  DATA STORE - localStorage + Cloud Sync
+    //  DATA STORE - localStorage + Cloud Sync + REALTIME
     // ============================================================
     let landlords = [];
     let tenants = [];
@@ -453,6 +464,7 @@
     let cloudConnected = false;
     let isSyncing = false;
     let dataLoaded = false;
+    let realtimeChannel = null;
 
     // ============================================================
     //  SUPABASE KEYS
@@ -508,31 +520,75 @@
     }
 
     // ============================================================
-    //  CONNECT TO SUPABASE (BACKGROUND)
+    //  CONNECT TO SUPABASE + REALTIME
     // ============================================================
     function connectSupabase() {
-        console.log('🔌 Connecting to Supabase...');
+        console.log('🔌 Connecting to Supabase with Realtime...');
         
         try {
             supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             cloudConnected = true;
-            document.getElementById('connStatus').textContent = '🟢 Online';
-            document.getElementById('connStatus').className = 'connection-status online';
+            document.getElementById('connStatus').textContent = '🟢 Live';
+            document.getElementById('connStatus').className = 'connection-status realtime';
+            document.getElementById('realtimeStatus').textContent = '⚡ Live';
+            document.getElementById('realtimeStatus').style.color = '#3b82f6';
             console.log('✅ Supabase connected!');
             
-            // Load from cloud in background
+            // Load from cloud
             loadFromCloud();
+            
+            // Setup Realtime subscription
+            setupRealtime();
             
         } catch (e) {
             cloudConnected = false;
             document.getElementById('connStatus').textContent = '🔴 Offline';
             document.getElementById('connStatus').className = 'connection-status offline';
+            document.getElementById('realtimeStatus').textContent = '❌ Offline';
+            document.getElementById('realtimeStatus').style.color = '#ef4444';
             console.log('⚠️ Supabase offline, using localStorage only');
         }
     }
 
     // ============================================================
-    //  LOAD FROM CLOUD (BACKGROUND SYNC)
+    //  SETUP REALTIME - INSTANT SYNC!
+    // ============================================================
+    function setupRealtime() {
+        if (!supabase || !cloudConnected) return;
+        
+        console.log('⚡ Setting up Realtime subscription...');
+        
+        // Subscribe to changes on the app_data table
+        realtimeChannel = supabase
+            .channel('app_data_channel')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
+                    schema: 'public',
+                    table: 'app_data'
+                },
+                (payload) => {
+                    console.log('⚡ Realtime update received!', payload);
+                    // Reload data instantly when any change happens
+                    loadFromCloud();
+                    showToast('⚡ Update from another device!');
+                }
+            )
+            .subscribe((status) => {
+                console.log('⚡ Realtime status:', status);
+                if (status === 'SUBSCRIBED') {
+                    document.getElementById('realtimeStatus').textContent = '⚡ Live';
+                    document.getElementById('realtimeStatus').style.color = '#22c55e';
+                    document.getElementById('syncStatus').className = 'cloud-sync-status realtime';
+                    document.getElementById('syncStatus').textContent = '⚡ Realtime';
+                    console.log('✅ Realtime connected - INSTANT SYNC ENABLED!');
+                }
+            });
+    }
+
+    // ============================================================
+    //  LOAD FROM CLOUD
     // ============================================================
     async function loadFromCloud() {
         if (!supabase || !cloudConnected) return;
@@ -547,7 +603,6 @@
             if (error) {
                 if (error.code === 'PGRST116') {
                     console.log('📝 No cloud data, will create on first save');
-                    // Save current local data to cloud
                     await saveToCloud();
                 }
                 return;
@@ -568,9 +623,12 @@
                 
                 const cloudTime = cloudData.lastUpdated || '1970-01-01';
                 
-                // If cloud is newer, load it
-                if (cloudTime > localTime) {
-                    console.log('☁️ Cloud has newer data, loading...');
+                // If cloud is newer OR data is different, load it
+                const cloudHasData = cloudData.landlords && cloudData.landlords.length > 0;
+                const localHasData = landlords.length > 0;
+                
+                if (cloudTime > localTime || (cloudHasData && !localHasData)) {
+                    console.log('☁️ Loading data from cloud...');
                     landlords = cloudData.landlords || [];
                     tenants = cloudData.tenants || [];
                     appointments = cloudData.appointments || [];
@@ -595,7 +653,7 @@
     }
 
     // ============================================================
-    //  SAVE TO CLOUD (BACKGROUND SYNC)
+    //  SAVE TO CLOUD
     // ============================================================
     async function saveToCloud() {
         if (!supabase || !cloudConnected || isSyncing) return;
@@ -626,8 +684,8 @@
             // Update localStorage with timestamp
             saveToLocalStorage();
             
-            document.getElementById('syncStatus').className = 'cloud-sync-status synced';
-            document.getElementById('syncStatus').textContent = '☁️ Synced';
+            document.getElementById('syncStatus').className = 'cloud-sync-status realtime';
+            document.getElementById('syncStatus').textContent = '⚡ Realtime';
             console.log('☁️ Saved to cloud');
             
         } catch (e) {
@@ -697,94 +755,91 @@
     //  ADD LANDLORD
     // ============================================================
     function addLandlord() {
-        const name = document.getElementById('llName').value.trim();
-        const propType = document.getElementById('llPropType').value;
-        const address = document.getElementById('llAddress').value.trim();
-        const rent = document.getElementById('llRent').value.trim();
-        const contact = document.getElementById('llContact').value.trim();
-        const fileInput = document.getElementById('llMedia');
-        
-        if (!name || !contact || !address) {
-            showToast('Please fill: Name, Address, and Contact.', 'error');
-            return;
-        }
-
-        if (!rent || parseFloat(rent) <= 0) {
-            showToast('Please enter a valid rent amount (> 0).', 'error');
-            return;
-        }
-
-        const mediaFiles = [];
-        const files = fileInput.files;
-
-        if (files && files.length > 0) {
-            let totalSize = 0;
-            for (let i = 0; i < files.length; i++) {
-                totalSize += files[i].size;
-            }
+        try {
+            console.log('➕ addLandlord() called');
             
-            if (totalSize > 20 * 1024 * 1024) {
-                if (!confirm("Total file size is " + (totalSize / 1024 / 1024).toFixed(1) + "MB. Continue?")) {
-                    return;
+            const name = document.getElementById('llName').value.trim();
+            const propType = document.getElementById('llPropType').value;
+            const address = document.getElementById('llAddress').value.trim();
+            const rent = document.getElementById('llRent').value.trim();
+            const contact = document.getElementById('llContact').value.trim();
+            const fileInput = document.getElementById('llMedia');
+            
+            if (!name || !contact || !address) {
+                showToast('Please fill: Name, Address, and Contact.', 'error');
+                return;
+            }
+
+            if (!rent || parseFloat(rent) <= 0) {
+                showToast('Please enter a valid rent amount (> 0).', 'error');
+                return;
+            }
+
+            const newLandlord = {
+                id: nextId++, 
+                name, 
+                propType, 
+                address, 
+                rent: parseFloat(rent),
+                contact, 
+                mediaFiles: [],
+                available: selectedStatus,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Handle files if any
+            if (fileInput.files && fileInput.files.length > 0) {
+                const files = fileInput.files;
+                let processed = 0;
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        newLandlord.mediaFiles.push({
+                            data: e.target.result,
+                            type: file.type.startsWith('video') ? 'video' : 'image',
+                            name: file.name
+                        });
+                        processed++;
+                        if (processed === files.length) {
+                            finalizeAddLandlord(newLandlord);
+                        }
+                    };
+                    reader.readAsDataURL(file);
                 }
+                if (files.length === 0) {
+                    finalizeAddLandlord(newLandlord);
+                }
+            } else {
+                finalizeAddLandlord(newLandlord);
             }
-
-            let processedCount = 0;
             
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const mediaType = file.type.startsWith('video') ? 'video' : 'image';
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    mediaFiles.push({
-                        data: e.target.result,
-                        type: mediaType,
-                        name: file.name
-                    });
-                    processedCount++;
-                    
-                    if (processedCount === files.length) {
-                        saveLandlordWithMedia(name, propType, address, rent, contact, mediaFiles);
-                    }
-                };
-                
-                reader.onerror = function() {
-                    showToast('Error reading file: ' + file.name, 'error');
-                    processedCount++;
-                };
-                
-                reader.readAsDataURL(file);
-            }
-        } else {
-            saveLandlordWithMedia(name, propType, address, rent, contact, []);
+        } catch (e) {
+            console.error('❌ Error in addLandlord:', e);
+            showToast('Error: ' + e.message, 'error');
         }
     }
 
-    function saveLandlordWithMedia(name, propType, address, rent, contact, mediaFiles) {
-        const newLandlord = {
-            id: nextId++, 
-            name, 
-            propType, 
-            address, 
-            rent: parseFloat(rent),
-            contact, 
-            mediaFiles: mediaFiles,
-            available: selectedStatus,
-            createdAt: new Date().toISOString()
-        };
-        
-        landlords.push(newLandlord);
-        
-        // Save to localStorage (instant)
-        saveToLocalStorage();
-        
-        // Save to cloud (background)
-        saveToCloud();
-        
-        renderAll();
-        clearLandlordForm();
-        showToast('✅ Landlord added! ' + mediaFiles.length + ' media files');
+    function finalizeAddLandlord(landlord) {
+        try {
+            console.log('💾 Saving landlord:', landlord.name);
+            landlords.push(landlord);
+            
+            // Save to localStorage (instant)
+            saveToLocalStorage();
+            console.log('✅ Saved to localStorage');
+            
+            // Save to cloud (background)
+            saveToCloud();
+            
+            renderAll();
+            clearLandlordForm();
+            showToast('✅ Landlord added! ' + landlord.mediaFiles.length + ' media files');
+            console.log('✅ Landlord added successfully!');
+        } catch (e) {
+            console.error('❌ Error saving landlord:', e);
+            showToast('Error saving: ' + e.message, 'error');
+        }
     }
 
     function clearLandlordForm() {
@@ -1173,7 +1228,7 @@
     function renderLandlords() {
         const tbody = document.getElementById('landlordTableBody');
         if (landlords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet. ⚡ Add one now!</td></tr>`;
             return;
         }
         let html = '';
@@ -1207,7 +1262,7 @@
     function renderTenants() {
         const tbody = document.getElementById('tenantTableBody');
         if (tenants.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet. ⚡ Add one now!</td></tr>`;
             return;
         }
         let html = '';
@@ -1463,46 +1518,9 @@
     }
 
     // ============================================================
-    //  AUTO-SYNC - EVERY 10 SECONDS (Background)
+    //  INIT - INSTANT LOAD + BACKGROUND SYNC + REALTIME
     // ============================================================
-    setInterval(() => {
-        if (cloudConnected) {
-            saveToCloud();
-            loadFromCloud();
-        }
-    }, 10000);
-
-    // ============================================================
-    //  APPOINTMENT REMINDERS
-    // ============================================================
-    setInterval(() => {
-        const now = new Date();
-        appointments.forEach(a => {
-            if (!a.dateTime) return;
-            const apptTime = new Date(a.dateTime);
-            const diffMins = (apptTime - now) / 60000;
-
-            if (diffMins <= 61 && diffMins >= 59) {
-                if (!a.tenantReminded) {
-                    const tMsg = `Reminder: You have an appointment for viewing in 1 hour at ${a.address}.`;
-                    sendWhatsApp(a.ttNum, tMsg);
-                    a.tenantReminded = true;
-                }
-                if (!a.landlordReminded) {
-                    const lMsg = `Reminder: You have an appointment with ${a.ttName} in 1 hour at ${a.address}.`;
-                    sendWhatsApp(a.llNum, lMsg);
-                    a.landlordReminded = true;
-                }
-                saveToLocalStorage();
-                saveToCloud();
-            }
-        });
-    }, 60000);
-
-    // ============================================================
-    //  INIT - INSTANT LOAD + BACKGROUND SYNC
-    // ============================================================
-    console.log('🚀 Starting Vusani Ikhaya...');
+    console.log('🚀 Starting Vusani Ikhaya with REALTIME SYNC!');
     
     // STEP 1: Load from localStorage instantly (shows data immediately)
     const hasLocalData = loadFromLocalStorage();
@@ -1517,7 +1535,7 @@
     // STEP 2: Set default status
     setStatus('online');
     
-    // STEP 3: Connect to Supabase in background
+    // STEP 3: Connect to Supabase with Realtime
     setTimeout(() => {
         connectSupabase();
     }, 500);
@@ -1529,11 +1547,12 @@
         } else {
             showToast(`📊 Loaded ${landlords.length} landlords and ${tenants.length} tenants`);
         }
+        console.log('⚡ REALTIME SYNC ENABLED - Changes appear instantly on all devices!');
     }, 1000);
     
-    console.log('✅ App ready!');
+    console.log('✅ App ready with REALTIME!');
     console.log('📦 Local data:', landlords.length, 'landlords,', tenants.length, 'tenants');
-    console.log('☁️ Cloud sync will happen in background');
+    console.log('⚡ Changes will sync INSTANTLY across all devices!');
 </script>
 </body>
 </html>

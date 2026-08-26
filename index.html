@@ -225,19 +225,56 @@
         }
         .toast.error { background: #ef4444; }
         @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+
+        .status-toggle-group {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .status-toggle-group .btn {
+            flex: 0 1 auto; min-width: 120px;
+        }
+        .status-toggle-group .btn.status-selected {
+            border: 3px solid #1e293b; transform: scale(1.05);
+        }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: #1e3a8a;
+        }
+        .loading-overlay .spinner {
+            width: 50px; height: 50px; border: 5px solid #e2e8f0;
+            border-top-color: #3b82f6; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-overlay.hidden { display: none; }
+        .cloud-sync-status {
+            display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.6rem;
+        }
+        .cloud-sync-status.synced { background: #d1fae5; color: #0b5e42; }
+        .cloud-sync-status.syncing { background: #fef3c7; color: #92400e; animation: pulse 1s infinite; }
+        .cloud-sync-status.error { background: #fee2e2; color: #991b1b; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div>☁️ Loading from cloud...</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:8px;">Please wait</div>
+</div>
 
 <div class="container" id="app">
     <!-- HEADER -->
     <div class="header">
         <div>
             <h1>🏠 Vusani Ikhaya</h1>
-            <div class="text-muted">Property Match System</div>
+            <div class="text-muted">Property Match System • <span class="cloud-sync-status synced" id="syncStatus">☁️ Synced</span></div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-outline btn-sm" onclick="renderAll()">🔄 Refresh</button>
+            <button class="btn btn-outline btn-sm" onclick="forceRefresh()">🔄 Refresh</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('tenants')">📥 Tenants</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('landlords')">📥 Landlords</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('matches')">🔗 Matches</button>
@@ -255,7 +292,7 @@
         <span>🔗 Matches: <strong id="statsMatches">0</strong></span>
         <span>📅 Appointments: <strong id="statsAppointments">0</strong></span>
         <span>🟢 Available: <strong id="statsAvailable">0</strong></span>
-        <span>☁️ <strong id="cloudStatus">Offline</strong></span>
+        <span>☁️ <strong id="cloudStatus">Connecting...</strong></span>
     </div>
 
     <!-- FORMS -->
@@ -293,10 +330,18 @@
                     <label>Contact *</label>
                     <input type="text" id="llContact" placeholder="0821234567" />
                 </div>
+                <div class="form-group">
+                    <label>Status *</label>
+                    <div class="status-toggle-group">
+                        <button type="button" class="btn btn-success btn-sm status-btn status-selected" id="statusOnline" onclick="setStatus('online')">🟢 Online</button>
+                        <button type="button" class="btn btn-danger btn-sm status-btn" id="statusOffline" onclick="setStatus('offline')">🔴 Offline</button>
+                    </div>
+                    <small>Select if this room is currently available</small>
+                </div>
                 <div class="form-group" style="flex: 1 0 100%;">
-                    <label>Upload Photos / Videos (multiple allowed)</label>
+                    <label>Upload Photos / Videos (multiple allowed) - SYNCs to Cloud!</label>
                     <input type="file" id="llMedia" accept="image/*,video/*" multiple />
-                    <small>Hold Ctrl/Cmd to select multiple files</small>
+                    <small>Hold Ctrl/Cmd to select multiple files • All devices can see photos!</small>
                 </div>
                 <div class="form-group" style="flex: 0 0 auto; width: 100%;">
                     <button class="btn" onclick="addLandlord()">+ Add Room</button>
@@ -335,12 +380,12 @@
     <div class="card">
         <div class="flex-between">
             <h2>🏢 Landlords &amp; Rooms</h2>
-            <span class="text-muted">Click row for details</span>
+            <span class="text-muted">Click row for details • Toggle status anytime</span>
         </div>
         <div class="table-wrap">
             <table>
                 <thead><tr><th>Status</th><th>Landlord</th><th>Property</th><th>Address</th><th>Rent</th><th>Media</th><th>Actions</th></tr></thead>
-                <tbody id="landlordTableBody"></tbody>
+                <tbody id="landlordTableBody"><tr><td colspan="7" class="empty-state">Loading from cloud...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -354,7 +399,7 @@
         <div class="table-wrap">
             <table>
                 <thead><tr><th>Name</th><th>Budget</th><th>Location</th><th>Contact</th><th>Action</th></tr></thead>
-                <tbody id="tenantTableBody"></tbody>
+                <tbody id="tenantTableBody"><tr><td colspan="5" class="empty-state">Loading from cloud...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -363,9 +408,9 @@
     <div class="card">
         <div class="flex-between">
             <h2>🔗 Auto Matches</h2>
-            <span class="text-muted">Tenants → Available Rooms</span>
+            <span class="text-muted">Tenants → Available Rooms (Online only)</span>
         </div>
-        <div id="matchesContainer"></div>
+        <div id="matchesContainer"><div class="empty-state">Loading matches...</div></div>
     </div>
 
     <!-- APPOINTMENTS -->
@@ -389,7 +434,7 @@
                 <button class="btn btn-success" onclick="saveAppointment()" id="apptSaveBtn">+ Add Appointment</button>
             </div>
         </div>
-        <div id="appointmentsContainer"></div>
+        <div id="appointmentsContainer"><div class="empty-state">No appointments scheduled.</div></div>
     </div>
 </div>
 
@@ -406,53 +451,18 @@
 
 <script>
     // ============================================================
-    //  DATA STORE - PERSISTENT STORAGE
+    //  DATA STORE - CLOUD PRIMARY!
     // ============================================================
     let landlords = [];
     let tenants = [];
     let appointments = [];
     let nextId = 1;
-    let dataLoaded = false;
-
-    function loadData() {
-        try {
-            const saved = localStorage.getItem('vusaniIkhayaData');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                landlords = parsed.landlords || [];
-                tenants = parsed.tenants || [];
-                appointments = parsed.appointments || [];
-                nextId = parsed.nextId || 1;
-                console.log("✅ Data loaded from localStorage:", {
-                    landlords: landlords.length,
-                    tenants: tenants.length
-                });
-                dataLoaded = true;
-            } else {
-                console.log("📝 No saved data found, starting fresh.");
-                dataLoaded = false;
-            }
-        } catch (e) { 
-            console.error("❌ Load error:", e); 
-            dataLoaded = false;
-        }
-    }
-
-    function saveData() {
-        try {
-            const data = { landlords, tenants, appointments, nextId };
-            localStorage.setItem('vusaniIkhayaData', JSON.stringify(data));
-            console.log("💾 Data saved to localStorage");
-            // Also save to cloud
-            setTimeout(() => saveToCloud(), 500);
-        } catch (e) {
-            console.error("❌ Save error:", e);
-            showToast("Storage limit reached! Please clear old data.", "error");
-        }
-    }
+    let selectedStatus = true;
+    let isCloudReady = false;
+    let syncInterval = null;
 
     // ============================================================
-    //  SUPABASE DATABASE - FIXED VERSION
+    //  SUPABASE DATABASE - CLOUD PRIMARY
     // ============================================================
 
     const SUPABASE_URL = 'https://kyvbpxrybonwnigjevlv.supabase.co';
@@ -461,8 +471,10 @@
     let supabase = null;
     let isSyncing = false;
     let cloudConnected = false;
-    let cloudDataLoaded = false;
 
+    // ============================================================
+    //  CONNECT TO SUPABASE
+    // ============================================================
     function connectSupabase() {
         try {
             supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -470,25 +482,63 @@
             document.getElementById('cloudStatus').textContent = 'Online ✅';
             document.getElementById('cloudStatus').style.color = '#22c55e';
             console.log('✅ Supabase connected successfully!');
-            // Only load from cloud if we have data or it's first time
             loadFromCloud();
         } catch (e) {
             cloudConnected = false;
             document.getElementById('cloudStatus').textContent = 'Offline ❌';
             document.getElementById('cloudStatus').style.color = '#ef4444';
-            console.log('⚠️ Supabase offline, using local storage only');
-            console.error('❌ Connection error:', e);
+            console.log('⚠️ Supabase offline');
+            showToast('⚠️ Cannot connect to cloud. Please check internet.', 'error');
+            // Try to load from localStorage as fallback
+            loadFromLocalStorage();
         }
     }
 
     // ============================================================
-    //  SAVE DATA TO SUPABASE
+    //  LOAD FROM LOCAL STORAGE (FALLBACK)
+    // ============================================================
+    function loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem('vusaniIkhayaData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                landlords = parsed.landlords || [];
+                tenants = parsed.tenants || [];
+                appointments = parsed.appointments || [];
+                nextId = parsed.nextId || 1;
+                console.log("📁 Loaded from localStorage (offline mode)");
+                renderAll();
+                hideLoading();
+            }
+        } catch (e) {
+            console.error("❌ Load error:", e);
+            hideLoading();
+        }
+    }
+
+    // ============================================================
+    //  SAVE TO LOCAL STORAGE (CACHE)
+    // ============================================================
+    function saveToLocalStorage() {
+        try {
+            localStorage.setItem('vusaniIkhayaData', JSON.stringify({ 
+                landlords, tenants, appointments, nextId 
+            }));
+        } catch (e) {
+            console.error("❌ Save to localStorage failed:", e);
+        }
+    }
+
+    // ============================================================
+    //  SAVE TO CLOUD (PRIMARY)
     // ============================================================
     async function saveToCloud() {
         if (!supabase || isSyncing || !cloudConnected) return;
         
         try {
             isSyncing = true;
+            document.getElementById('syncStatus').className = 'cloud-sync-status syncing';
+            document.getElementById('syncStatus').textContent = '☁️ Syncing...';
             
             const data = {
                 landlords: landlords,
@@ -507,29 +557,30 @@
                 });
             
             if (error) throw error;
+            
+            // Also cache to localStorage
+            saveToLocalStorage();
+            
+            document.getElementById('syncStatus').className = 'cloud-sync-status synced';
+            document.getElementById('syncStatus').textContent = '☁️ Synced';
             console.log('☁️ Saved to cloud successfully');
-            document.getElementById('cloudStatus').textContent = 'Online ✅';
-            document.getElementById('cloudStatus').style.color = '#22c55e';
             
         } catch (e) {
             console.error('❌ Save to cloud failed:', e);
-            document.getElementById('cloudStatus').textContent = 'Error ⚠️';
-            document.getElementById('cloudStatus').style.color = '#f59e0b';
+            document.getElementById('syncStatus').className = 'cloud-sync-status error';
+            document.getElementById('syncStatus').textContent = '⚠️ Error';
         } finally {
             isSyncing = false;
         }
     }
 
     // ============================================================
-    //  LOAD DATA FROM SUPABASE - FIXED!
+    //  LOAD FROM CLOUD (PRIMARY)
     // ============================================================
     async function loadFromCloud() {
         if (!supabase || !cloudConnected) return;
         
-        // Prevent loading if we already have local data and this is first load
-        if (dataLoaded && !cloudDataLoaded) {
-            console.log('📌 Local data exists, checking cloud for newer data...');
-        }
+        showLoading();
         
         try {
             const { data, error } = await supabase
@@ -540,145 +591,89 @@
             
             if (error) {
                 if (error.code === 'PGRST116') {
-                    console.log('📝 No cloud data yet. Creating first sync...');
-                    // Save local data to cloud if we have any
-                    if (landlords.length > 0 || tenants.length > 0) {
-                        await saveToCloud();
-                    }
+                    console.log('📝 No cloud data yet. Starting fresh.');
+                    // Initialize with empty data
+                    await saveToCloud();
+                    hideLoading();
+                    renderAll();
+                    return;
                 }
-                return;
+                throw error;
             }
             
             if (data && data.data) {
                 const cloudData = data.data;
+                landlords = cloudData.landlords || [];
+                tenants = cloudData.tenants || [];
+                appointments = cloudData.appointments || [];
+                nextId = cloudData.nextId || 1;
                 
-                // Get local data timestamp
-                const localData = localStorage.getItem('vusaniIkhayaData');
-                let localTime = '1970-01-01';
-                if (localData) {
-                    try {
-                        const localParsed = JSON.parse(localData);
-                        localTime = localParsed._lastUpdated || '1970-01-01';
-                    } catch (e) {}
-                }
+                // Cache to localStorage
+                saveToLocalStorage();
                 
-                const cloudTime = cloudData.lastUpdated || '1970-01-01';
+                console.log('☁️ Loaded from cloud:', {
+                    landlords: landlords.length,
+                    tenants: tenants.length,
+                    appointments: appointments.length
+                });
                 
-                // Check if we should use cloud data
-                const localHasData = landlords.length > 0 || tenants.length > 0;
-                const cloudHasData = cloudData.landlords && cloudData.landlords.length > 0;
-                
-                // If cloud has data AND (local is empty OR cloud is newer)
-                if (cloudHasData && (!localHasData || cloudTime > localTime)) {
-                    console.log('☁️ Loading data from cloud...');
-                    landlords = cloudData.landlords || [];
-                    tenants = cloudData.tenants || [];
-                    appointments = cloudData.appointments || [];
-                    nextId = cloudData.nextId || 1;
-                    
-                    // Save to localStorage with timestamp
-                    const saveDataWithTime = {
-                        landlords, tenants, appointments, nextId,
-                        _lastUpdated: cloudTime
-                    };
-                    localStorage.setItem('vusaniIkhayaData', JSON.stringify(saveDataWithTime));
-                    
-                    cloudDataLoaded = true;
-                    renderAll();
-                    showToast('☁️ Synced from cloud');
-                    console.log('☁️ Loaded from cloud successfully:', {
-                        landlords: landlords.length,
-                        tenants: tenants.length
-                    });
-                } else if (localHasData) {
-                    console.log('📌 Local data is newer or same, keeping it');
-                    // Update cloud with local data if it's newer
-                    if (cloudTime < localTime && localHasData) {
-                        await saveToCloud();
-                    }
-                }
+                renderAll();
+                hideLoading();
+                showToast('☁️ Data loaded from cloud');
             }
             
         } catch (e) {
             console.error('❌ Load from cloud failed:', e);
-        }
-    }
-
-    // ============================================================
-    //  AUTO-SYNC
-    // ============================================================
-    // Save to cloud every 10 seconds
-    setInterval(() => {
-        if (landlords.length > 0 || tenants.length > 0) {
-            saveToCloud();
-        }
-    }, 10000);
-
-    // Check for cloud updates every 30 seconds
-    setInterval(() => {
-        loadFromCloud();
-    }, 30000);
-
-    // ============================================================
-    //  EXPORT / IMPORT DATA
-    // ============================================================
-    function exportData() {
-        const data = {
-            landlords: landlords,
-            tenants: tenants,
-            appointments: appointments,
-            nextId: nextId,
-            exportedAt: new Date().toISOString()
-        };
-        
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `vusani-ikhaya-backup-${new Date().toISOString().slice(0,10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        showToast('✅ Data exported successfully!');
-    }
-
-    function importData(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                
-                if (!data.landlords || !data.tenants || !data.appointments) {
-                    showToast('❌ Invalid file format!', 'error');
-                    return;
-                }
-                
-                if (!confirm(`Import ${data.landlords.length} landlords, ${data.tenants.length} tenants, and ${data.appointments.length} appointments?`)) {
-                    return;
-                }
-                
-                landlords = data.landlords || [];
-                tenants = data.tenants || [];
-                appointments = data.appointments || [];
-                nextId = data.nextId || 1;
-                
-                saveData();
-                renderAll();
-                showToast(`✅ Imported: ${landlords.length} landlords, ${tenants.length} tenants`);
-                
-            } catch (error) {
-                showToast('❌ Error reading file: ' + error.message, 'error');
+            // Try localStorage as fallback
+            loadFromLocalStorage();
+            hideLoading();
+            if (landlords.length === 0 && tenants.length === 0) {
+                showToast('⚠️ Could not load from cloud. Using offline data.', 'error');
             }
-        };
-        reader.readAsText(file);
-        document.getElementById('importFile').value = '';
+        }
+    }
+
+    // ============================================================
+    //  LOADING OVERLAY
+    // ============================================================
+    function showLoading() {
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+
+    // ============================================================
+    //  FORCE REFRESH
+    // ============================================================
+    function forceRefresh() {
+        showLoading();
+        if (cloudConnected) {
+            loadFromCloud();
+        } else {
+            loadFromLocalStorage();
+            hideLoading();
+        }
+        showToast('🔄 Refreshing data...');
+    }
+
+    // ============================================================
+    //  STATUS TOGGLE IN FORM
+    // ============================================================
+    function setStatus(status) {
+        const onlineBtn = document.getElementById('statusOnline');
+        const offlineBtn = document.getElementById('statusOffline');
+        
+        if (status === 'online') {
+            selectedStatus = true;
+            onlineBtn.classList.add('status-selected');
+            offlineBtn.classList.remove('status-selected');
+        } else {
+            selectedStatus = false;
+            offlineBtn.classList.add('status-selected');
+            onlineBtn.classList.remove('status-selected');
+        }
     }
 
     // ============================================================
@@ -733,7 +728,7 @@
                 totalSize += files[i].size;
             }
             
-            if (totalSize > 10 * 1024 * 1024) {
+            if (totalSize > 20 * 1024 * 1024) {
                 if (!confirm("Total file size is " + (totalSize / 1024 / 1024).toFixed(1) + "MB. Continue?")) {
                     return;
                 }
@@ -772,7 +767,7 @@
     }
 
     function saveLandlordWithMedia(name, propType, address, rent, contact, mediaFiles) {
-        landlords.push({
+        const newLandlord = {
             id: nextId++, 
             name, 
             propType, 
@@ -780,13 +775,18 @@
             rent: parseFloat(rent),
             contact, 
             mediaFiles: mediaFiles,
-            available: true,
+            available: selectedStatus,
             createdAt: new Date().toISOString()
+        };
+        
+        landlords.push(newLandlord);
+        
+        // Save to cloud immediately
+        saveToCloud().then(() => {
+            renderAll();
+            clearLandlordForm();
+            showToast('✅ Landlord added with ' + mediaFiles.length + ' media files! Status: ' + (selectedStatus ? 'Online' : 'Offline'));
         });
-        saveData(); 
-        renderAll();
-        clearLandlordForm();
-        showToast('✅ Landlord added with ' + mediaFiles.length + ' media file(s)!');
     }
 
     function clearLandlordForm() {
@@ -795,6 +795,7 @@
         document.getElementById('llContact').value = '';
         document.getElementById('llRent').value = '';
         document.getElementById('llMedia').value = '';
+        setStatus('online');
     }
 
     // ============================================================
@@ -823,15 +824,15 @@
             location, 
             contact 
         });
-        saveData(); 
-        renderAll();
-
-        document.getElementById('ttName').value = '';
-        document.getElementById('ttBudget').value = '';
-        document.getElementById('ttLocation').value = '';
-        document.getElementById('ttContact').value = '';
         
-        showToast('✅ Tenant added successfully!');
+        saveToCloud().then(() => {
+            renderAll();
+            document.getElementById('ttName').value = '';
+            document.getElementById('ttBudget').value = '';
+            document.getElementById('ttLocation').value = '';
+            document.getElementById('ttContact').value = '';
+            showToast('✅ Tenant added successfully!');
+        });
     }
 
     // ============================================================
@@ -841,31 +842,38 @@
         const l = landlords.find(x => x.id === id);
         if (l) { 
             l.available = !l.available; 
-            saveData(); 
-            renderAll(); 
-            showToast(`✅ Room ${l.available ? 'available' : 'offline'}`);
+            saveToCloud().then(() => {
+                renderAll(); 
+                showToast(`✅ Room ${l.available ? 'Online ✅' : 'Offline 🔴'}`);
+            });
         }
     }
 
     function deleteLandlord(id) {
         if (!confirm('Remove this room?')) return;
         landlords = landlords.filter(l => l.id !== id);
-        saveData(); renderAll();
-        showToast('🗑️ Room removed');
+        saveToCloud().then(() => {
+            renderAll();
+            showToast('🗑️ Room removed');
+        });
     }
 
     function deleteTenant(id) {
         if (!confirm('Remove this tenant?')) return;
         tenants = tenants.filter(t => t.id !== id);
-        saveData(); renderAll();
-        showToast('🗑️ Tenant removed');
+        saveToCloud().then(() => {
+            renderAll();
+            showToast('🗑️ Tenant removed');
+        });
     }
 
     function clearAll() {
-        if (!confirm('Delete ALL data? This cannot be undone!')) return;
+        if (!confirm('Delete ALL data from cloud? This cannot be undone!')) return;
         landlords = []; tenants = []; appointments = []; nextId = 1;
-        saveData(); renderAll();
-        showToast('✅ All data cleared!');
+        saveToCloud().then(() => {
+            renderAll();
+            showToast('✅ All data cleared from cloud!');
+        });
     }
 
     // ============================================================
@@ -961,8 +969,10 @@
 
         clearAppointmentForm();
         document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
-        saveData(); renderAll();
-        showToast('✅ Appointment saved!');
+        saveToCloud().then(() => {
+            renderAll();
+            showToast('✅ Appointment saved!');
+        });
     }
 
     function clearAppointmentForm() {
@@ -994,8 +1004,10 @@
     function deleteAppointment(id) {
         if (!confirm('Remove this appointment?')) return;
         appointments = appointments.filter(a => a.id != id);
-        saveData(); renderAll();
-        showToast('🗑️ Appointment removed');
+        saveToCloud().then(() => {
+            renderAll();
+            showToast('🗑️ Appointment removed');
+        });
     }
 
     function sendWhatsApp(phoneNum, message) {
@@ -1031,6 +1043,124 @@
     }
 
     // ============================================================
+    //  EXPORT / IMPORT
+    // ============================================================
+    function exportData() {
+        const data = {
+            landlords: landlords,
+            tenants: tenants,
+            appointments: appointments,
+            nextId: nextId,
+            exportedAt: new Date().toISOString()
+        };
+        
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vusani-ikhaya-backup-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('✅ Data exported successfully!');
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (!data.landlords || !data.tenants || !data.appointments) {
+                    showToast('❌ Invalid file format!', 'error');
+                    return;
+                }
+                
+                if (!confirm(`Import ${data.landlords.length} landlords, ${data.tenants.length} tenants to cloud?`)) {
+                    return;
+                }
+                
+                landlords = data.landlords || [];
+                tenants = data.tenants || [];
+                appointments = data.appointments || [];
+                nextId = data.nextId || 1;
+                
+                saveToCloud().then(() => {
+                    renderAll();
+                    showToast(`✅ Imported: ${landlords.length} landlords, ${tenants.length} tenants`);
+                });
+                
+            } catch (error) {
+                showToast('❌ Error reading file: ' + error.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+        document.getElementById('importFile').value = '';
+    }
+
+    // ============================================================
+    //  PDF EXPORT
+    // ============================================================
+    function exportPDF(type) {
+        if (typeof window.jspdf === 'undefined') {
+            showToast('PDF library is loading. Please try again.', 'error');
+            return;
+        }
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+        let head = [], body = [], title = "";
+
+        if (type === 'tenants') {
+            title = "Vusani Ikhaya Properties - Tenants List";
+            head = [['Name', 'Contact', 'Budget (R)', 'Preferred Location']];
+            tenants.forEach(t => {
+                body.push([t.name, t.contact, parseFloat(t.budget).toFixed(2), t.location]);
+            });
+        } 
+        else if (type === 'landlords') {
+            title = "Vusani Ikhaya Properties - Landlords List";
+            head = [['Name', 'Contact', 'Address', 'Property Type', 'Rent (R)', 'Status']];
+            landlords.forEach(l => {
+                body.push([l.name, l.contact, l.address, l.propType, parseFloat(l.rent).toFixed(2), l.available ? 'Online' : 'Offline']);
+            });
+        } 
+        else if (type === 'matches') {
+            title = "Vusani Ikhaya Properties - Matched Pairs";
+            head = [['Tenant Name', 'Tenant Contact', 'Landlord Name', 'Landlord Contact', 'Address', 'Rent (R)']];
+            const m = getMatches();
+            m.forEach(match => {
+                body.push([
+                    match.tenant.name, 
+                    match.tenant.contact, 
+                    match.landlord.name, 
+                    match.landlord.contact, 
+                    match.landlord.address,
+                    parseFloat(match.landlord.rent).toFixed(2)
+                ]);
+            });
+        }
+
+        doc.text(title, 14, 15);
+        doc.autoTable({
+            head: head,
+            body: body,
+            startY: 25,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 58, 138] }
+        });
+
+        doc.save(`${type}_list.pdf`);
+    }
+
+    // ============================================================
     //  RENDER FUNCTIONS
     // ============================================================
     function renderAll() {
@@ -1050,8 +1180,8 @@
         let html = '';
         landlords.forEach(l => {
             const statusBadge = l.available 
-                ? '<span class="badge badge-green">🟢</span>'
-                : '<span class="badge badge-red">🔴</span>';
+                ? '<span class="badge badge-green">🟢 Online</span>'
+                : '<span class="badge badge-red">🔴 Offline</span>';
             
             const mediaCount = l.mediaFiles ? l.mediaFiles.length : 0;
             
@@ -1065,7 +1195,7 @@
                     <td>${mediaCount} 📸</td>
                     <td>
                         <button class="btn btn-sm ${l.available ? 'btn-warning' : 'btn-success'}" onclick="event.stopPropagation();toggleAvailability(${l.id})">
-                            ${l.available ? 'Offline' : 'Online'}
+                            ${l.available ? 'Set Offline' : 'Set Online'}
                         </button>
                         <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteLandlord(${l.id})">✕</button>
                     </td>
@@ -1103,7 +1233,7 @@
         const matches = getMatches();
 
         if (matches.length === 0) {
-            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and rooms with matching budgets &amp; locations.</div>`;
+            container.innerHTML = `<div class="empty-state">No matches found. Add tenants and online rooms with matching budgets &amp; locations.</div>`;
             return;
         }
 
@@ -1172,7 +1302,7 @@
         appointments.forEach(a => {
             const date = new Date(a.dateTime);
             const formatted = date.toLocaleString();
-            const waMessage = `Hello ${a.ttName}, you have an appointment for viewing on ${formatted} at ${a.address}. My number is 0685353186, WhatsApp this number when you're at the location.`;
+            const waMessage = `Hello ${a.ttName}, you have an appointment for viewing on ${formatted} at ${a.address}.`;
             
             html += `
                 <div class="appointment-item">
@@ -1284,7 +1414,7 @@
             <div class="detail-row"><strong>Address:</strong> <span>${esc(l.address)}</span></div>
             <div class="detail-row"><strong>Rent:</strong> <span>R${parseFloat(l.rent).toFixed(2)}</span></div>
             <div class="detail-row"><strong>Contact:</strong> <span>${esc(l.contact)}</span></div>
-            <div class="detail-row"><strong>Status:</strong> <span>${l.available ? '✅ Available' : '🔴 Offline'}</span></div>
+            <div class="detail-row"><strong>Status:</strong> <span>${l.available ? '✅ Online' : '🔴 Offline'}</span></div>
             <div class="detail-row"><strong>Media Count:</strong> <span>${l.mediaFiles ? l.mediaFiles.length : 0} files</span></div>
         `;
         
@@ -1323,61 +1453,6 @@
     });
 
     // ============================================================
-    //  PDF EXPORT
-    // ============================================================
-    function exportPDF(type) {
-        if (typeof window.jspdf === 'undefined') {
-            showToast('PDF library is loading. Please try again.', 'error');
-            return;
-        }
-        
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('landscape');
-        let head = [], body = [], title = "";
-
-        if (type === 'tenants') {
-            title = "Vusani Ikhaya Properties - Tenants List";
-            head = [['Name', 'Contact', 'Budget (R)', 'Preferred Location']];
-            tenants.forEach(t => {
-                body.push([t.name, t.contact, parseFloat(t.budget).toFixed(2), t.location]);
-            });
-        } 
-        else if (type === 'landlords') {
-            title = "Vusani Ikhaya Properties - Landlords List";
-            head = [['Name', 'Contact', 'Address', 'Property Type', 'Rent (R)']];
-            landlords.forEach(l => {
-                body.push([l.name, l.contact, l.address, l.propType, parseFloat(l.rent).toFixed(2)]);
-            });
-        } 
-        else if (type === 'matches') {
-            title = "Vusani Ikhaya Properties - Matched Pairs";
-            head = [['Tenant Name', 'Tenant Contact', 'Landlord Name', 'Landlord Contact', 'Address', 'Rent (R)']];
-            const m = getMatches();
-            m.forEach(match => {
-                body.push([
-                    match.tenant.name, 
-                    match.tenant.contact, 
-                    match.landlord.name, 
-                    match.landlord.contact, 
-                    match.landlord.address,
-                    parseFloat(match.landlord.rent).toFixed(2)
-                ]);
-            });
-        }
-
-        doc.text(title, 14, 15);
-        doc.autoTable({
-            head: head,
-            body: body,
-            startY: 25,
-            theme: 'grid',
-            headStyles: { fillColor: [30, 58, 138] }
-        });
-
-        doc.save(`${type}_list.pdf`);
-    }
-
-    // ============================================================
     //  UPDATE STATS
     // ============================================================
     function updateStats() {
@@ -1389,14 +1464,22 @@
     }
 
     // ============================================================
-    //  AUTO-REFRESH & INIT
+    //  AUTO-SYNC - EVERY 5 SECONDS!
     // ============================================================
-    // Auto-refresh every 10 seconds
     setInterval(() => {
-        renderAll();
-    }, 10000);
+        if (cloudConnected) {
+            // Only save if there's data
+            if (landlords.length > 0 || tenants.length > 0) {
+                saveToCloud();
+            }
+            // Also check for updates from other devices
+            loadFromCloud();
+        }
+    }, 5000); // Every 5 seconds!
 
-    // Check appointments for reminders every minute
+    // ============================================================
+    //  APPOINTMENT REMINDERS
+    // ============================================================
     setInterval(() => {
         const now = new Date();
         appointments.forEach(a => {
@@ -1415,7 +1498,7 @@
                     sendWhatsApp(a.llNum, lMsg);
                     a.landlordReminded = true;
                 }
-                saveData();
+                saveToCloud();
             }
         });
     }, 60000);
@@ -1423,15 +1506,20 @@
     // ============================================================
     //  INIT
     // ============================================================
-    loadData();
-    renderAll();
+    // First check localStorage (fast)
+    loadFromLocalStorage();
     
-    // Connect to Supabase after 1 second
+    // Then connect to cloud and load
     setTimeout(() => {
         connectSupabase();
-    }, 1000);
+    }, 500);
     
-    console.log("✅ Vusani Ikhaya Properties loaded successfully!");
+    // Set default status
+    setStatus('online');
+    
+    console.log("✅ Vusani Ikhaya Properties loaded!");
+    console.log("☁️ Cloud-first storage enabled - all devices share data!");
+    console.log("📸 Photos sync across ALL devices via Supabase!");
     console.log("📊 Landlords:", landlords.length, "Tenants:", tenants.length);
 </script>
 </body>

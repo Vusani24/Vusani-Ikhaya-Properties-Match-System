@@ -6,7 +6,6 @@
     <title>Vusani Ikhaya Properties - Property Match System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -236,29 +235,15 @@
             border: 3px solid #1e293b; transform: scale(1.05);
         }
         
-        .cloud-sync-status {
-            display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.6rem;
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #22c55e; color: white; padding: 12px 20px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000;
+            animation: slideUp 0.3s ease; display: none; font-size: 0.9rem;
+            max-width: 90%; text-align: center;
         }
-        .cloud-sync-status.synced { background: #d1fae5; color: #0b5e42; }
-        .cloud-sync-status.syncing { background: #fef3c7; color: #92400e; animation: pulse 1s infinite; }
-        .cloud-sync-status.error { background: #fee2e2; color: #991b1b; }
-        .cloud-sync-status.realtime { background: #dbeafe; color: #1e4f8a; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
-        .connection-status {
-            display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.7rem;
-        }
-        .connection-status.online { background: #d1fae5; color: #0b5e42; }
-        .connection-status.offline { background: #fee2e2; color: #991b1b; }
-        .connection-status.connecting { background: #fef3c7; color: #92400e; }
-        .connection-status.realtime { background: #dbeafe; color: #1e4f8a; }
-        
-        .realtime-badge {
-            display: inline-block; background: #dbeafe; color: #1e4f8a;
-            padding: 2px 10px; border-radius: 12px; font-size: 0.6rem;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .toast.error { background: #ef4444; }
+        @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -268,15 +253,10 @@
     <div class="header">
         <div>
             <h1>🏠 Vusani Ikhaya</h1>
-            <div class="text-muted">
-                Property Match System • 
-                <span class="cloud-sync-status realtime" id="syncStatus">⚡ Realtime</span>
-                <span class="connection-status realtime" id="connStatus">🟢 Live</span>
-                <span class="realtime-badge">⚡ INSTANT SYNC</span>
-            </div>
+            <div class="text-muted">Property Match System • 💾 Local Storage Only</div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-outline btn-sm" onclick="forceRefresh()">🔄 Refresh</button>
+            <button class="btn btn-outline btn-sm" onclick="renderAll()">🔄 Refresh</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('tenants')">📥 Tenants</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('landlords')">📥 Landlords</button>
             <button class="btn btn-success btn-sm" onclick="exportPDF('matches')">🔗 Matches</button>
@@ -294,8 +274,7 @@
         <span>🔗 Matches: <strong id="statsMatches">0</strong></span>
         <span>📅 Appointments: <strong id="statsAppointments">0</strong></span>
         <span>🟢 Available: <strong id="statsAvailable">0</strong></span>
-        <span>📦 <strong id="dataSource">Local</strong></span>
-        <span>⚡ <strong id="realtimeStatus">Connected</strong></span>
+        <span>💾 <strong id="dataSource">Local</strong></span>
     </div>
 
     <!-- FORMS -->
@@ -342,9 +321,9 @@
                     <small>Select if this room is currently available</small>
                 </div>
                 <div class="form-group" style="flex: 1 0 100%;">
-                    <label>Upload Photos / Videos (multiple allowed) - SYNCs to Cloud!</label>
+                    <label>Upload Photos / Videos (multiple allowed)</label>
                     <input type="file" id="llMedia" accept="image/*,video/*" multiple />
-                    <small>Hold Ctrl/Cmd to select multiple files • All devices see photos INSTANTLY!</small>
+                    <small>Hold Ctrl/Cmd to select multiple files</small>
                 </div>
                 <div class="form-group" style="flex: 0 0 auto; width: 100%;">
                     <button class="btn" onclick="addLandlord()">+ Add Room</button>
@@ -383,12 +362,12 @@
     <div class="card">
         <div class="flex-between">
             <h2>🏢 Landlords &amp; Rooms</h2>
-            <span class="text-muted">⚡ Changes appear instantly on all devices</span>
+            <span class="text-muted">Click row for details</span>
         </div>
         <div class="table-wrap">
             <table>
                 <thead><tr><th>Status</th><th>Landlord</th><th>Property</th><th>Address</th><th>Rent</th><th>Media</th><th>Actions</th></tr></thead>
-                <tbody id="landlordTableBody"><tr><td colspan="7" class="empty-state">Loading data...</td></tr></tbody>
+                <tbody id="landlordTableBody"><tr><td colspan="7" class="empty-state">No rooms added yet.</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -397,12 +376,12 @@
     <div class="card">
         <div class="flex-between">
             <h2>🧑‍💼 Tenants</h2>
-            <span class="text-muted">⚡ Syncs instantly across devices</span>
+            <span class="text-muted">Click for matched rooms</span>
         </div>
         <div class="table-wrap">
             <table>
                 <thead><tr><th>Name</th><th>Budget</th><th>Location</th><th>Contact</th><th>Action</th></tr></thead>
-                <tbody id="tenantTableBody"><tr><td colspan="5" class="empty-state">Loading data...</td></tr></tbody>
+                <tbody id="tenantTableBody"><tr><td colspan="5" class="empty-state">No tenants added yet.</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -411,9 +390,9 @@
     <div class="card">
         <div class="flex-between">
             <h2>🔗 Auto Matches</h2>
-            <span class="text-muted">⚡ Updates in real-time</span>
+            <span class="text-muted">Tenants → Available Rooms</span>
         </div>
-        <div id="matchesContainer"><div class="empty-state">Loading matches...</div></div>
+        <div id="matchesContainer"><div class="empty-state">Add tenants and rooms to see matches.</div></div>
     </div>
 
     <!-- APPOINTMENTS -->
@@ -454,30 +433,18 @@
 
 <script>
     // ============================================================
-    //  DATA STORE - localStorage + Cloud Sync + REALTIME
+    //  DATA STORE - LOCAL STORAGE ONLY (SIMPLIFIED)
     // ============================================================
     let landlords = [];
     let tenants = [];
     let appointments = [];
     let nextId = 1;
     let selectedStatus = true;
-    let cloudConnected = false;
-    let isSyncing = false;
-    let dataLoaded = false;
-    let realtimeChannel = null;
 
     // ============================================================
-    //  SUPABASE KEYS
+    //  LOAD FROM LOCAL STORAGE
     // ============================================================
-    const SUPABASE_URL = 'https://kyvbpxrybonwnigjevlv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5dmJweHJ5Ym9ud25pZ2pldmx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDA4MzksImV4cCI6MjEwMzMxNjgzOX0.F5vyJbAkvtXnVEmDJHJNF5m-hQBKdfb1aLK25wFSUMc';
-
-    let supabase = null;
-
-    // ============================================================
-    //  LOAD FROM LOCAL STORAGE (INSTANT!)
-    // ============================================================
-    function loadFromLocalStorage() {
+    function loadData() {
         try {
             const saved = localStorage.getItem('vusaniIkhayaData');
             if (saved) {
@@ -486,228 +453,34 @@
                 tenants = parsed.tenants || [];
                 appointments = parsed.appointments || [];
                 nextId = parsed.nextId || 1;
-                console.log('📦 Loaded from localStorage:', {
+                console.log('✅ Data loaded from localStorage:', {
                     landlords: landlords.length,
                     tenants: tenants.length
                 });
-                dataLoaded = true;
-                document.getElementById('dataSource').textContent = '📦 Local';
-                document.getElementById('dataSource').style.color = '#64748b';
                 renderAll();
                 return true;
             }
         } catch (e) {
-            console.error('❌ localStorage load error:', e);
+            console.error('❌ Load error:', e);
         }
         return false;
     }
 
     // ============================================================
-    //  SAVE TO LOCAL STORAGE (CACHE)
+    //  SAVE TO LOCAL STORAGE
     // ============================================================
-    function saveToLocalStorage() {
+    function saveData() {
         try {
             localStorage.setItem('vusaniIkhayaData', JSON.stringify({
-                landlords, tenants, appointments, nextId,
-                lastUpdated: new Date().toISOString()
+                landlords, tenants, appointments, nextId
             }));
-            console.log('💾 Saved to localStorage');
-            document.getElementById('dataSource').textContent = '📦 Local + ☁️';
+            console.log('💾 Data saved to localStorage');
+            document.getElementById('dataSource').textContent = '💾 Saved';
             document.getElementById('dataSource').style.color = '#22c55e';
+            showToast('✅ Data saved!');
         } catch (e) {
-            console.error('❌ localStorage save error:', e);
-        }
-    }
-
-    // ============================================================
-    //  CONNECT TO SUPABASE + REALTIME
-    // ============================================================
-    function connectSupabase() {
-        console.log('🔌 Connecting to Supabase with Realtime...');
-        
-        try {
-            supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            cloudConnected = true;
-            document.getElementById('connStatus').textContent = '🟢 Live';
-            document.getElementById('connStatus').className = 'connection-status realtime';
-            document.getElementById('realtimeStatus').textContent = '⚡ Live';
-            document.getElementById('realtimeStatus').style.color = '#3b82f6';
-            console.log('✅ Supabase connected!');
-            
-            // Load from cloud
-            loadFromCloud();
-            
-            // Setup Realtime subscription
-            setupRealtime();
-            
-        } catch (e) {
-            cloudConnected = false;
-            document.getElementById('connStatus').textContent = '🔴 Offline';
-            document.getElementById('connStatus').className = 'connection-status offline';
-            document.getElementById('realtimeStatus').textContent = '❌ Offline';
-            document.getElementById('realtimeStatus').style.color = '#ef4444';
-            console.log('⚠️ Supabase offline, using localStorage only');
-        }
-    }
-
-    // ============================================================
-    //  SETUP REALTIME - INSTANT SYNC!
-    // ============================================================
-    function setupRealtime() {
-        if (!supabase || !cloudConnected) return;
-        
-        console.log('⚡ Setting up Realtime subscription...');
-        
-        // Subscribe to changes on the app_data table
-        realtimeChannel = supabase
-            .channel('app_data_channel')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
-                    schema: 'public',
-                    table: 'app_data'
-                },
-                (payload) => {
-                    console.log('⚡ Realtime update received!', payload);
-                    // Reload data instantly when any change happens
-                    loadFromCloud();
-                    showToast('⚡ Update from another device!');
-                }
-            )
-            .subscribe((status) => {
-                console.log('⚡ Realtime status:', status);
-                if (status === 'SUBSCRIBED') {
-                    document.getElementById('realtimeStatus').textContent = '⚡ Live';
-                    document.getElementById('realtimeStatus').style.color = '#22c55e';
-                    document.getElementById('syncStatus').className = 'cloud-sync-status realtime';
-                    document.getElementById('syncStatus').textContent = '⚡ Realtime';
-                    console.log('✅ Realtime connected - INSTANT SYNC ENABLED!');
-                }
-            });
-    }
-
-    // ============================================================
-    //  LOAD FROM CLOUD
-    // ============================================================
-    async function loadFromCloud() {
-        if (!supabase || !cloudConnected) return;
-        
-        try {
-            const { data, error } = await supabase
-                .from('app_data')
-                .select('data')
-                .eq('id', 'main_data')
-                .single();
-            
-            if (error) {
-                if (error.code === 'PGRST116') {
-                    console.log('📝 No cloud data, will create on first save');
-                    await saveToCloud();
-                }
-                return;
-            }
-            
-            if (data && data.data) {
-                const cloudData = data.data;
-                
-                // Check if cloud has newer data
-                const localData = localStorage.getItem('vusaniIkhayaData');
-                let localTime = '1970-01-01';
-                if (localData) {
-                    try {
-                        const localParsed = JSON.parse(localData);
-                        localTime = localParsed.lastUpdated || '1970-01-01';
-                    } catch (e) {}
-                }
-                
-                const cloudTime = cloudData.lastUpdated || '1970-01-01';
-                
-                // If cloud is newer OR data is different, load it
-                const cloudHasData = cloudData.landlords && cloudData.landlords.length > 0;
-                const localHasData = landlords.length > 0;
-                
-                if (cloudTime > localTime || (cloudHasData && !localHasData)) {
-                    console.log('☁️ Loading data from cloud...');
-                    landlords = cloudData.landlords || [];
-                    tenants = cloudData.tenants || [];
-                    appointments = cloudData.appointments || [];
-                    nextId = cloudData.nextId || 1;
-                    
-                    // Update localStorage with cloud data
-                    saveToLocalStorage();
-                    
-                    // Re-render
-                    renderAll();
-                    document.getElementById('dataSource').textContent = '☁️ Cloud';
-                    document.getElementById('dataSource').style.color = '#3b82f6';
-                    showToast('☁️ Synced from cloud');
-                } else {
-                    console.log('📌 Local data is current');
-                }
-            }
-            
-        } catch (e) {
-            console.error('❌ Cloud load error:', e);
-        }
-    }
-
-    // ============================================================
-    //  SAVE TO CLOUD
-    // ============================================================
-    async function saveToCloud() {
-        if (!supabase || !cloudConnected || isSyncing) return;
-        
-        try {
-            isSyncing = true;
-            document.getElementById('syncStatus').className = 'cloud-sync-status syncing';
-            document.getElementById('syncStatus').textContent = '☁️ Syncing...';
-            
-            const data = {
-                landlords: landlords,
-                tenants: tenants,
-                appointments: appointments,
-                nextId: nextId,
-                lastUpdated: new Date().toISOString()
-            };
-            
-            const { error } = await supabase
-                .from('app_data')
-                .upsert({
-                    id: 'main_data',
-                    data: data,
-                    updated_at: new Date().toISOString()
-                });
-            
-            if (error) throw error;
-            
-            // Update localStorage with timestamp
-            saveToLocalStorage();
-            
-            document.getElementById('syncStatus').className = 'cloud-sync-status realtime';
-            document.getElementById('syncStatus').textContent = '⚡ Realtime';
-            console.log('☁️ Saved to cloud');
-            
-        } catch (e) {
-            console.error('❌ Cloud save error:', e);
-            document.getElementById('syncStatus').className = 'cloud-sync-status error';
-            document.getElementById('syncStatus').textContent = '⚠️ Error';
-        } finally {
-            isSyncing = false;
-        }
-    }
-
-    // ============================================================
-    //  FORCE REFRESH
-    // ============================================================
-    function forceRefresh() {
-        showToast('🔄 Refreshing...');
-        if (cloudConnected) {
-            loadFromCloud();
-        } else {
-            loadFromLocalStorage();
-            renderAll();
-            showToast('📦 Using local data');
+            console.error('❌ Save error:', e);
+            showToast('❌ Error saving data!', 'error');
         }
     }
 
@@ -807,9 +580,6 @@
                     };
                     reader.readAsDataURL(file);
                 }
-                if (files.length === 0) {
-                    finalizeAddLandlord(newLandlord);
-                }
             } else {
                 finalizeAddLandlord(newLandlord);
             }
@@ -824,14 +594,7 @@
         try {
             console.log('💾 Saving landlord:', landlord.name);
             landlords.push(landlord);
-            
-            // Save to localStorage (instant)
-            saveToLocalStorage();
-            console.log('✅ Saved to localStorage');
-            
-            // Save to cloud (background)
-            saveToCloud();
-            
+            saveData();
             renderAll();
             clearLandlordForm();
             showToast('✅ Landlord added! ' + landlord.mediaFiles.length + ' media files');
@@ -878,9 +641,7 @@
             contact 
         });
         
-        saveToLocalStorage();
-        saveToCloud();
-        
+        saveData();
         renderAll();
         document.getElementById('ttName').value = '';
         document.getElementById('ttBudget').value = '';
@@ -896,8 +657,7 @@
         const l = landlords.find(x => x.id === id);
         if (l) { 
             l.available = !l.available; 
-            saveToLocalStorage();
-            saveToCloud();
+            saveData();
             renderAll(); 
             showToast(`✅ ${l.available ? 'Online ✅' : 'Offline 🔴'}`);
         }
@@ -906,8 +666,7 @@
     function deleteLandlord(id) {
         if (!confirm('Remove this room?')) return;
         landlords = landlords.filter(l => l.id !== id);
-        saveToLocalStorage();
-        saveToCloud();
+        saveData();
         renderAll();
         showToast('🗑️ Room removed');
     }
@@ -915,8 +674,7 @@
     function deleteTenant(id) {
         if (!confirm('Remove this tenant?')) return;
         tenants = tenants.filter(t => t.id !== id);
-        saveToLocalStorage();
-        saveToCloud();
+        saveData();
         renderAll();
         showToast('🗑️ Tenant removed');
     }
@@ -924,8 +682,7 @@
     function clearAll() {
         if (!confirm('Delete ALL data? This cannot be undone!')) return;
         landlords = []; tenants = []; appointments = []; nextId = 1;
-        saveToLocalStorage();
-        saveToCloud();
+        saveData();
         renderAll();
         showToast('✅ All data cleared!');
     }
@@ -1023,8 +780,7 @@
 
         clearAppointmentForm();
         document.getElementById('apptSaveBtn').innerText = '+ Add Appointment';
-        saveToLocalStorage();
-        saveToCloud();
+        saveData();
         renderAll();
         showToast('✅ Appointment saved!');
     }
@@ -1058,8 +814,7 @@
     function deleteAppointment(id) {
         if (!confirm('Remove this appointment?')) return;
         appointments = appointments.filter(a => a.id != id);
-        saveToLocalStorage();
-        saveToCloud();
+        saveData();
         renderAll();
         showToast('🗑️ Appointment removed');
     }
@@ -1146,8 +901,7 @@
                 appointments = data.appointments || [];
                 nextId = data.nextId || 1;
                 
-                saveToLocalStorage();
-                saveToCloud();
+                saveData();
                 renderAll();
                 showToast(`✅ Imported: ${landlords.length} landlords, ${tenants.length} tenants`);
                 
@@ -1228,7 +982,7 @@
     function renderLandlords() {
         const tbody = document.getElementById('landlordTableBody');
         if (landlords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet. ⚡ Add one now!</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No rooms added yet. Add one now!</td></tr>`;
             return;
         }
         let html = '';
@@ -1262,7 +1016,7 @@
     function renderTenants() {
         const tbody = document.getElementById('tenantTableBody');
         if (tenants.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet. ⚡ Add one now!</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No tenants added yet. Add one now!</td></tr>`;
             return;
         }
         let html = '';
@@ -1518,41 +1272,27 @@
     }
 
     // ============================================================
-    //  INIT - INSTANT LOAD + BACKGROUND SYNC + REALTIME
+    //  INIT
     // ============================================================
-    console.log('🚀 Starting Vusani Ikhaya with REALTIME SYNC!');
+    console.log('🚀 Starting Vusani Ikhaya (Local Storage Only)...');
     
-    // STEP 1: Load from localStorage instantly (shows data immediately)
-    const hasLocalData = loadFromLocalStorage();
+    // Load data
+    loadData();
     
-    if (!hasLocalData) {
-        // First time - show empty state
-        renderAll();
-        document.getElementById('dataSource').textContent = '📦 New';
-        document.getElementById('dataSource').style.color = '#64748b';
-    }
-    
-    // STEP 2: Set default status
+    // Set default status
     setStatus('online');
     
-    // STEP 3: Connect to Supabase with Realtime
-    setTimeout(() => {
-        connectSupabase();
-    }, 500);
-    
-    // STEP 4: Show welcome message
+    // Show welcome message
     setTimeout(() => {
         if (landlords.length === 0 && tenants.length === 0) {
             showToast('👋 Welcome! Add your first landlord or tenant.');
         } else {
             showToast(`📊 Loaded ${landlords.length} landlords and ${tenants.length} tenants`);
         }
-        console.log('⚡ REALTIME SYNC ENABLED - Changes appear instantly on all devices!');
-    }, 1000);
+    }, 500);
     
-    console.log('✅ App ready with REALTIME!');
-    console.log('📦 Local data:', landlords.length, 'landlords,', tenants.length, 'tenants');
-    console.log('⚡ Changes will sync INSTANTLY across all devices!');
+    console.log('✅ App ready!');
+    console.log('📦 Data:', landlords.length, 'landlords,', tenants.length, 'tenants');
 </script>
 </body>
 </html>
